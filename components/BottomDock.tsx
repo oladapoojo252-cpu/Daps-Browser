@@ -2,31 +2,42 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { ChevronLeft, ChevronRight, Home, Layers, Shield } from 'lucide-react-native';
 
-export const BottomDock = ({ canGoBack, canGoForward, onBack, onForward, onHome, onTabs, isPrivate, onTogglePrivate }: any) => {
+export const BottomDock = ({
+  canGoBack,
+  canGoForward,
+  onBack,
+  onForward,
+  onHome,
+  onTabs,
+  isPrivate,
+  onTogglePrivate,
+}: any) => {
   return (
     <View style={styles.container}>
       <View style={[styles.dock, isPrivate && styles.dockPrivate]}>
         <TouchableOpacity onPress={onBack} disabled={!canGoBack} style={styles.iconButton}>
-          <ChevronLeft color={isPrivate ? (canGoBack ? "#FFF" : "#444") : (canGoBack ? "#000" : "#CCC")} size={26} />
+          <ChevronLeft
+            color={isPrivate ? (canGoBack ? '#FFFFFF' : '#444444') : canGoBack ? '#000000' : '#CCCCCC'}
+            size={26}
+          />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={onForward} disabled={!canGoForward} style={styles.iconButton}>
-          <ChevronRight color={isPrivate ? (canGoForward ? "#FFF" : "#444") : (canGoForward ? "#000" : "#CCC")} size={26} />
+          <ChevronRight
+            color={isPrivate ? (canGoForward ? '#FFFFFF' : '#444444') : canGoForward ? '#000000' : '#CCCCCC'}
+            size={26}
+          />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={onHome} style={[styles.mainBtn, isPrivate && styles.mainBtnPrivate]}>
-          <Home color={isPrivate ? "#000" : "#FFF"} size={20} fill={isPrivate ? "#000" : "#FFF"} />
+          <Home color={isPrivate ? '#000000' : '#FFFFFF'} size={20} fill={isPrivate ? '#000000' : '#FFFFFF'} />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={onTabs} style={styles.iconButton}>
-          <Layers color={isPrivate ? "#FFF" : "#000"} size={22} />
+          <Layers color={isPrivate ? '#FFFFFF' : '#000000'} size={22} />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={onTogglePrivate} style={styles.iconButton}>
-          <Shield 
-            size={22} 
-            color={isPrivate ? "#A855F7" : "#000"} 
-            fill={isPrivate ? "#A855F7" : "none"} 
+          <Shield
+            size={22}
+            color={isPrivate ? '#FFFFFF' : '#000000'}
+            fill={isPrivate ? '#FFFFFF' : 'none'}
           />
         </TouchableOpacity>
       </View>
@@ -35,7 +46,10 @@ export const BottomDock = ({ canGoBack, canGoForward, onBack, onForward, onHome,
 };
 
 const styles = StyleSheet.create({
-  container: { position: 'absolute', bottom: 34, width: '100%', alignItems: 'center', zIndex: 100 },
+  container: {
+    width: '100%',
+    alignItems: 'center',
+  },
   dock: {
     flexDirection: 'row',
     width: '85%',
@@ -44,7 +58,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'space-around',
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
@@ -54,11 +68,11 @@ const styles = StyleSheet.create({
   },
   dockPrivate: {
     backgroundColor: '#1A1A1A',
-    borderColor: '#333',
+    borderColor: '#333333',
   },
   iconButton: { padding: 10 },
   mainBtn: {
-    backgroundColor: '#000',
+    backgroundColor: '#000000',
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -66,6 +80,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   mainBtnPrivate: {
-    backgroundColor: '#FFF',
-  }
+    backgroundColor: '#FFFFFF',
+  },
 });
