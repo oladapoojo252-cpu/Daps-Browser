@@ -209,28 +209,27 @@ function MainBrowserApp() {
         translucent={true}
       />
 
-      {/* Dynamic top padding guarantees notch clearance */}
       <View style={{ height: insets.top, backgroundColor: theme.bg }} />
 
       <View style={styles.layoutContainer}>
-       <AddressBar
-  url={currentTab.url === 'home' ? '' : currentTab.url}
-  onSearch={handleSearch}
-  isPrivate={isPrivate}
-  onReload={() => browserRef.current?.reload()}
-  onToggleBookmark={() => {
-    const exists = bookmarks.find(b => b.url === currentTab.url);
-    if (exists) {
-      setBookmarks(prev => prev.filter(b => b.url !== currentTab.url));
-    } else {
-      setBookmarks(prev => [
-        { title: currentTab.title || currentTab.url.split('/')[2] || 'Site', url: currentTab.url },
-        ...prev,
-      ]);
-    }
-  }}
-  isBookmarked={bookmarks.some(b => b.url === currentTab.url)}
-/>
+        <AddressBar
+          url={currentTab.url === 'home' ? '' : currentTab.url}
+          onSearch={handleSearch}
+          isPrivate={isPrivate}
+          onToggleBookmark={() => {
+            const exists = bookmarks.find(b => b.url === currentTab.url);
+            if (exists) {
+              setBookmarks(prev => prev.filter(b => b.url !== currentTab.url));
+            } else {
+              setBookmarks(prev => [
+                { title: currentTab.title || currentTab.url.split('/')[2] || 'Site', url: currentTab.url },
+                ...prev,
+              ]);
+            }
+          } }
+          isBookmarked={bookmarks.some(b => b.url === currentTab.url)} onReload={function (): void {
+            throw new Error('Function not implemented.');
+          } }        />
 
         {currentTab.url !== 'home' && progress < 1 && (
           <View style={[styles.progressTrack, { backgroundColor: theme.progressTrack }]}>
@@ -271,7 +270,6 @@ function MainBrowserApp() {
           )}
         </View>
 
-        {/* Dynamic bottom margin ensures floating dock stays cleanly above system buttons / home bar */}
         <View
           pointerEvents="box-none"
           style={[
@@ -284,6 +282,7 @@ function MainBrowserApp() {
             canGoForward={navState.canGoForward}
             onBack={() => browserRef.current?.goBack()}
             onForward={() => browserRef.current?.goForward()}
+            onReload={() => browserRef.current?.reload()}
             onHome={handleHome}
             onTabs={() => setIsTabSwitcherVisible(true)}
             isPrivate={isPrivate}
@@ -309,7 +308,6 @@ function MainBrowserApp() {
         }}
       />
 
-      {/* Tab Switcher */}
       <Modal visible={isTabSwitcherVisible} animationType="slide">
         <SafeAreaView style={[styles.modalContainer, { backgroundColor: isPrivate ? '#000000' : '#F2F2F7' }]}>
           <View style={styles.modalHeader}>
