@@ -1,25 +1,28 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { ChevronLeft, ChevronRight, RotateCw, Home, Layers, Shield } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { ChevronLeft, ChevronRight, Home, Layers, Shield } from 'lucide-react-native';
 
 export const BottomDock = ({
   canGoBack,
   canGoForward,
   onBack,
   onForward,
-  onReload,
   onHome,
   onTabs,
   isPrivate,
   onTogglePrivate,
+  isDarkMode = false,
+  tabCount = 1,
 }: any) => {
+  const dark = isDarkMode || isPrivate;
+
   return (
-    <View style={styles.container}>
-      <View style={[styles.dock, isPrivate && styles.dockPrivate]}>
+    <View style={styles.container} pointerEvents="box-none">
+      <View style={[styles.dock, dark && styles.dockPrivate]}>
         {/* Back */}
         <TouchableOpacity onPress={onBack} disabled={!canGoBack} style={styles.iconButton}>
           <ChevronLeft
-            color={isPrivate ? (canGoBack ? '#FFFFFF' : '#444444') : canGoBack ? '#000000' : '#CCCCCC'}
+            color={dark ? (canGoBack ? '#FFFFFF' : '#444444') : canGoBack ? '#000000' : '#CCCCCC'}
             size={24}
           />
         </TouchableOpacity>
@@ -27,35 +30,31 @@ export const BottomDock = ({
         {/* Forward */}
         <TouchableOpacity onPress={onForward} disabled={!canGoForward} style={styles.iconButton}>
           <ChevronRight
-            color={isPrivate ? (canGoForward ? '#FFFFFF' : '#444444') : canGoForward ? '#000000' : '#CCCCCC'}
+            color={dark ? (canGoForward ? '#FFFFFF' : '#444444') : canGoForward ? '#000000' : '#CCCCCC'}
             size={24}
           />
         </TouchableOpacity>
 
-        {/* Refresh / Reload */}
-        <TouchableOpacity onPress={onReload} style={styles.iconButton}>
-          <RotateCw
-            color={isPrivate ? '#FFFFFF' : '#000000'}
-            size={20}
-          />
-        </TouchableOpacity>
-
         {/* Home */}
-        <TouchableOpacity onPress={onHome} style={[styles.mainBtn, isPrivate && styles.mainBtnPrivate]}>
-          <Home color={isPrivate ? '#000000' : '#FFFFFF'} size={18} fill={isPrivate ? '#000000' : '#FFFFFF'} />
+        <TouchableOpacity onPress={onHome} style={[styles.mainBtn, dark && styles.mainBtnPrivate]}>
+          <Home color={dark ? '#000000' : '#FFFFFF'} size={18} fill={dark ? '#000000' : '#FFFFFF'} />
         </TouchableOpacity>
 
-        {/* Tabs */}
+        {/* Tabs with Count Indicator (Chrome / Brave style) */}
         <TouchableOpacity onPress={onTabs} style={styles.iconButton}>
-          <Layers color={isPrivate ? '#FFFFFF' : '#000000'} size={22} />
+          <View style={[styles.tabBadge, { borderColor: dark ? '#FFFFFF' : '#000000' }]}>
+            <Text style={[styles.tabBadgeText, { color: dark ? '#FFFFFF' : '#000000' }]}>
+              {tabCount || 1}
+            </Text>
+          </View>
         </TouchableOpacity>
 
         {/* Private Mode */}
         <TouchableOpacity onPress={onTogglePrivate} style={styles.iconButton}>
           <Shield
             size={20}
-            color={isPrivate ? '#FFFFFF' : '#000000'}
-            fill={isPrivate ? '#FFFFFF' : 'none'}
+            color={dark ? '#FFFFFF' : '#000000'}
+            fill={isPrivate ? (dark ? '#FFFFFF' : '#000000') : 'none'}
           />
         </TouchableOpacity>
       </View>
@@ -70,35 +69,47 @@ const styles = StyleSheet.create({
   },
   dock: {
     flexDirection: 'row',
-    width: '90%',
-    height: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.98)',
-    borderRadius: 30,
+    width: '88%',
+    height: 58,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 29,
     alignItems: 'center',
     justifyContent: 'space-around',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 8,
     borderWidth: 1,
-    borderColor: '#F0F0F0',
-    paddingHorizontal: 8,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
+    paddingHorizontal: 12,
   },
   dockPrivate: {
-    backgroundColor: '#1A1A1A',
-    borderColor: '#333333',
+    backgroundColor: 'rgba(26, 26, 26, 0.95)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   iconButton: { padding: 8 },
   mainBtn: {
     backgroundColor: '#000000',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     justifyContent: 'center',
     alignItems: 'center',
   },
   mainBtnPrivate: {
     backgroundColor: '#FFFFFF',
+  },
+  tabBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tabBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
 });

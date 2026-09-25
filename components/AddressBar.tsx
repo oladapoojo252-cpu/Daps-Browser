@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import { Search, X, Star, RotateCw } from 'lucide-react-native';
+import { Search, X, Star, RotateCw, Lock, Shield } from 'lucide-react-native';
 
 interface AddressBarProps {
   url: string;
   onSearch: (val: string) => void;
   onToggleBookmark: () => void;
   onReload: () => void;
+  onStopLoading?: () => void;
+  isLoading?: boolean;
   isBookmarked: boolean;
   isPrivate?: boolean;
+  pageBlockedCount?: number;
+  shieldsActive?: boolean;
+  onOpenShields?: () => void;
+  isDarkMode?: boolean;
 }
 
 export const AddressBar = ({
@@ -16,25 +22,34 @@ export const AddressBar = ({
   onSearch,
   onToggleBookmark,
   onReload,
+  onStopLoading,
+  isLoading = false,
   isBookmarked,
   isPrivate = false,
+  shieldsActive = true,
+  onOpenShields,
+  isDarkMode = false,
 }: AddressBarProps) => {
   const [inputText, setInputText] = useState(url);
+  const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
     setInputText(url);
   }, [url]);
 
+  const dark = isDarkMode || isPrivate;
   const theme = {
-    wrapperBg: isPrivate ? '#000000' : '#FFFFFF',
-    pillBg: isPrivate ? '#1A1A1A' : '#F0F0F2',
-    pillBorder: isPrivate ? '#2A2A2A' : '#E5E7EB',
-    text: isPrivate ? '#FFFFFF' : '#111827',
-    placeholder: isPrivate ? '#666666' : '#9CA3AF',
-    icon: isPrivate ? '#888888' : '#6B7280',
-    clearIcon: isPrivate ? '#888888' : '#6B7280',
-    starActive: isPrivate ? '#FFFFFF' : '#111827',
+    wrapperBg: dark ? '#000000' : '#FFFFFF',
+    pillBg: dark ? '#1A1A1A' : '#F0F0F2',
+    pillBorder: dark ? '#2A2A2A' : '#E5E7EB',
+    text: dark ? '#FFFFFF' : '#111827',
+    placeholder: dark ? '#666666' : '#9CA3AF',
+    icon: dark ? '#888888' : '#6B7280',
+    starActive: dark ? '#FFFFFF' : '#111827',
   };
+
+  const isWebPage = url !== '' && url !== 'home';
+  const isSecure = url.startsWith('https://');
 
   return (
     <View style={[styles.wrapper, { backgroundColor: theme.wrapperBg }]}>
@@ -47,12 +62,40 @@ export const AddressBar = ({
           },
         ]}
       >
-        <Search color={theme.icon} size={15} style={styles.icon} />
+        {/* Left Side: Lock / Daps Shield / Search Icon */}
+        {isWebPage ? (
+          <TouchableOpacity
+            onPress={onOpenShields}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.leftBtn}
+          >
+            {shieldsActive ? (
+              <Shield
+                size={16}
+                color={theme.text}
+                fill={isPrivate ? '#FFFFFF' : '#000000'}
+              />
+            ) : isSecure ? (
+              <Lock size={15} color={theme.icon} />
+            ) : (
+              <Search color={theme.icon} size={15} />
+            )}
+          </TouchableOpacity>
+        ) : (
+          <Search color={theme.icon} size={15} style={styles.leftIcon} />
+        )}
+
+        {/* Input */}
         <TextInput
           style={[styles.input, { color: theme.text }]}
           value={inputText}
           onChangeText={setInputText}
-          onSubmitEditing={() => onSearch(inputText)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          onSubmitEditing={() => {
+            setIsFocused(false);
+            onSearch(inputText);
+          }}
           autoCapitalize="none"
           autoCorrect={false}
           selectTextOnFocus={true}
@@ -61,16 +104,13 @@ export const AddressBar = ({
           placeholderTextColor={theme.placeholder}
         />
 
-        {/* Reload button for active websites */}
-        {url !== '' && (
-          <TouchableOpacity onPress={onReload} style={styles.iconBtn}>
-            <RotateCw color={theme.icon} size={15} />
-          </TouchableOpacity>
-        )}
-
-        {/* Bookmark button */}
-        {url !== '' && (
-          <TouchableOpacity onPress={onToggleBookmark} style={styles.iconBtn}>
+        {/* Bookmark Button */}
+        {isWebPage && !isFocused && (
+          <TouchableOpacity
+            onPress={onToggleBookmark}
+            style={styles.iconBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
             <Star
               size={16}
               color={isBookmarked ? theme.starActive : theme.icon}
@@ -79,12 +119,40 @@ export const AddressBar = ({
           </TouchableOpacity>
         )}
 
-        {/* Clear text input button */}
-        {inputText.length > 0 && (
-          <TouchableOpacity onPress={() => setInputText('')} style={styles.iconBtn}>
-            <X color={theme.clearIcon} size={16} />
-          </TouchableOpacity>
-        )}
+        {/* Dynamic Action:
+            - When focused or typing: "X" clears text input
+            - While webpage is loading: "X" stops page loading
+            - When webpage finishes loading: switches to Reload!
+        */}
+        {isFocused || inputText !== url ? (
+          inputText.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setInputText('')}
+              style={styles.iconBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <X color={theme.icon} size={16} />
+            </TouchableOpacity>
+          )
+        ) : isWebPage ? (
+          isLoading ? (
+            <TouchableOpacity
+              onPress={onStopLoading}
+              style={styles.iconBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <X color={theme.icon} size={16} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={onReload}
+              style={styles.iconBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <RotateCw color={theme.icon} size={15} />
+            </TouchableOpacity>
+          )
+        ) : null}
       </View>
     </View>
   );
@@ -98,12 +166,27 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 12,
-    height: 40,
+    height: 42,
     borderWidth: 1,
   },
-  icon: { marginRight: 8 },
-  input: { flex: 1, fontSize: 14, height: '100%' },
-  iconBtn: { padding: 4, marginLeft: 2 },
+  leftBtn: {
+    marginRight: 8,
+    padding: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  leftIcon: {
+    marginRight: 8,
+  },
+  input: {
+    flex: 1,
+    fontSize: 14,
+    height: '100%',
+  },
+  iconBtn: {
+    padding: 4,
+    marginLeft: 4,
+  },
 });

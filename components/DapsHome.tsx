@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,10 @@ import {
   Alert,
   Animated,
   Easing,
+  Image,
 } from 'react-native';
-import { LayoutGrid, Zap, Globe, History, Search } from 'lucide-react-native';
+import { LayoutGrid, Zap, Globe, History, Download, ShieldCheck } from 'lucide-react-native';
+import { calculateShieldSavings } from '../utils/dapsShield';
 
 const { width } = Dimensions.get('window');
 const ITEM_WIDTH = (width - 40) / 3;
@@ -19,26 +21,79 @@ interface DapsHomeProps {
   onSelectShortcut: (url: string) => void;
   onOpenHistory: () => void;
   onOpenSettings: () => void;
+  onOpenDownloads?: () => void;
+  onOpenShields?: () => void;
+  totalBlockedCount?: number;
   bookmarks: { title: string; url: string }[];
   onRemoveBookmark: (url: string) => void;
   isPrivate: boolean;
+  isDarkMode?: boolean;
 }
+
+const BookmarkFavicon = ({
+  url,
+  title,
+  theme,
+}: {
+  url: string;
+  title: string;
+  theme: any;
+}) => {
+  const [hasError, setHasError] = useState(false);
+
+  let domain = '';
+  try {
+    if (url && url !== 'home') {
+      domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname;
+    }
+  } catch {}
+
+  const faviconUri = domain
+    ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128`
+    : '';
+
+  return (
+    <View
+      style={[
+        styles.faviconCircle,
+        { backgroundColor: theme.iconBg, borderColor: theme.border },
+      ]}
+    >
+      {faviconUri && !hasError ? (
+        <Image
+          source={{ uri: faviconUri }}
+          style={styles.faviconImage}
+          onError={() => setHasError(true)}
+          resizeMode="contain"
+        />
+      ) : (
+        <Text style={[styles.faviconLetter, { color: theme.text }]}>
+          {title ? title.charAt(0).toUpperCase() : 'W'}
+        </Text>
+      )}
+    </View>
+  );
+};
 
 export const DapsHome = ({
   onSelectShortcut,
   onOpenHistory,
   onOpenSettings,
+  onOpenDownloads,
+  onOpenShields,
+  totalBlockedCount = 0,
   bookmarks,
   onRemoveBookmark,
   isPrivate,
+  isDarkMode = false,
 }: DapsHomeProps) => {
-  // Animation values
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const floatAnim1 = useRef(new Animated.Value(0)).current;
   const floatAnim2 = useRef(new Animated.Value(0)).current;
 
+  const savings = calculateShieldSavings(totalBlockedCount);
+
   useEffect(() => {
-    // Subtle pulse for the shield/glow
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -56,7 +111,6 @@ export const DapsHome = ({
       ])
     ).start();
 
-    // Floating particles animation
     Animated.loop(
       Animated.sequence([
         Animated.timing(floatAnim1, {
@@ -99,20 +153,22 @@ export const DapsHome = ({
     ]);
   };
 
+  const dark = isDarkMode || isPrivate;
   const theme = {
-    bg: isPrivate ? '#000000' : '#FFFFFF',
-    text: isPrivate ? '#FFFFFF' : '#000000',
-    card: isPrivate ? '#1A1A1A' : '#F5F5F7',
-    border: isPrivate ? '#333333' : '#EEEEEE',
-    subtext: isPrivate ? '#888888' : '#777777',
-    iconBg: isPrivate ? '#222222' : '#F9F9F9',
+    bg: dark ? '#000000' : '#FFFFFF',
+    text: dark ? '#FFFFFF' : '#000000',
+    card: dark ? '#1A1A1A' : '#F5F5F7',
+    border: dark ? '#333333' : '#EEEEEE',
+    subtext: dark ? '#888888' : '#777777',
+    iconBg: dark ? '#222222' : '#F9F9F9',
+    badgeBg: dark ? '#333333' : '#000000',
   };
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.bg }]}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 100 }}
+      contentContainerStyle={{ paddingBottom: 110 }}
     >
       <View style={styles.header}>
         <View>
@@ -126,9 +182,12 @@ export const DapsHome = ({
         </TouchableOpacity>
       </View>
 
-      {/* Non-clickable Animated Hero Card */}
-      <View style={[styles.heroCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-        {/* Floating background ambient dots */}
+      {/* Interactive Daps Shield Hero Card */}
+      <TouchableOpacity
+        style={[styles.heroCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+        onPress={onOpenShields}
+        activeOpacity={0.85}
+      >
         <Animated.View
           style={[
             styles.ambientDot,
@@ -151,13 +210,17 @@ export const DapsHome = ({
         />
 
         <View style={styles.heroInfo}>
-          <View style={[styles.badge, { backgroundColor: isPrivate ? '#333333' : '#000000' }]}>
+          <View style={[styles.badge, { backgroundColor: theme.badgeBg }]}>
             <Zap size={10} color="#FFFFFF" fill="#FFFFFF" />
-            <Text style={styles.badgeText}>{isPrivate ? 'PRIVATE ENGINE ACTIVE' : 'SHIELD ENGINE ACTIVE'}</Text>
+            <Text style={styles.badgeText}>
+              {isPrivate ? 'PRIVATE ENGINE ACTIVE' : 'DAPS SHIELD ACTIVE'}
+            </Text>
           </View>
           <Text style={[styles.heroTitle, { color: theme.text }]}>Daps Engine</Text>
           <Text style={[styles.heroDesc, { color: theme.subtext }]}>
-            Ad blocking and private network protection running in real-time.
+            {totalBlockedCount > 0
+              ? `${totalBlockedCount} ads & trackers blocked • ${savings.formattedData} data saved`
+              : 'Real-time tracker & ad protection running seamlessly.'}
           </Text>
         </View>
 
@@ -173,31 +236,31 @@ export const DapsHome = ({
             ]}
           />
           <View style={[styles.centerOrb, { backgroundColor: isPrivate ? '#FFFFFF' : '#000000' }]}>
-            <View style={[styles.innerCore, { backgroundColor: isPrivate ? '#000000' : '#FFFFFF' }]} />
+            <ShieldCheck size={14} color={isPrivate ? '#000000' : '#FFFFFF'} />
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
 
       <View style={styles.utilityGrid}>
-        <TouchableOpacity style={styles.utilItem} onPress={() => onSelectShortcut('https://www.wikipedia.org')}>
+        <TouchableOpacity style={styles.utilItem} onPress={() => onSelectShortcut('https://www.google.com')}>
           <View style={[styles.utilIcon, { backgroundColor: theme.card }]}>
             <Globe size={20} color={theme.text} />
           </View>
-          <Text style={[styles.utilLabel, { color: theme.text }]}>Explore</Text>
+          <Text style={[styles.utilLabel, { color: theme.text }]}>Search</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.utilItem} onPress={onOpenHistory}>
           <View style={[styles.utilIcon, { backgroundColor: theme.card }]}>
             <History size={20} color={theme.text} />
           </View>
-          <Text style={[styles.utilLabel, { color: theme.text }]}>Recent</Text>
+          <Text style={[styles.utilLabel, { color: theme.text }]}>History</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.utilItem} onPress={() => onSelectShortcut('https://www.youtube.com')}>
-          <View style={[styles.utilIcon, { backgroundColor: isPrivate ? '#333333' : '#000000' }]}>
-            <Search size={20} color="#FFFFFF" />
+        <TouchableOpacity style={styles.utilItem} onPress={onOpenDownloads}>
+          <View style={[styles.utilIcon, { backgroundColor: theme.card }]}>
+            <Download size={20} color={theme.text} />
           </View>
-          <Text style={[styles.utilLabel, { color: theme.text }]}>Entertainment</Text>
+          <Text style={[styles.utilLabel, { color: theme.text }]}>Downloads</Text>
         </TouchableOpacity>
       </View>
 
@@ -216,11 +279,7 @@ export const DapsHome = ({
               onLongPress={() => handleLongPress(bookmark)}
               delayLongPress={500}
             >
-              <View style={[styles.faviconCircle, { backgroundColor: theme.iconBg, borderColor: theme.border }]}>
-                <Text style={[styles.faviconLetter, { color: theme.text }]}>
-                  {bookmark.title.charAt(0).toUpperCase()}
-                </Text>
-              </View>
+              <BookmarkFavicon url={bookmark.url} title={bookmark.title} theme={theme} />
               <Text style={[styles.bookmarkName, { color: theme.text }]} numberOfLines={1}>
                 {bookmark.title}
               </Text>
@@ -238,15 +297,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 30,
-    marginBottom: 25,
+    marginTop: 20,
+    marginBottom: 20,
   },
   dateText: { fontSize: 11, color: '#AAAAAA', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
-  greeting: { fontSize: 28, fontWeight: '900', marginTop: 2, letterSpacing: -0.5 },
+  greeting: { fontSize: 26, fontWeight: '900', marginTop: 2, letterSpacing: -0.5 },
   menuBtn: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
   heroCard: {
     borderRadius: 24,
-    padding: 24,
+    padding: 22,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -264,13 +323,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 8,
     alignSelf: 'flex-start',
     gap: 4,
   },
   badgeText: { fontSize: 9, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
-  heroTitle: { fontSize: 22, fontWeight: '800' },
-  heroDesc: { fontSize: 13, marginTop: 4, lineHeight: 18 },
+  heroTitle: { fontSize: 20, fontWeight: '800' },
+  heroDesc: { fontSize: 12, marginTop: 4, lineHeight: 17 },
   radarContainer: {
     width: 52,
     height: 52,
@@ -285,34 +344,30 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   centerOrb: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  innerCore: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  utilityGrid: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 30 },
+  utilityGrid: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 25 },
   utilItem: { alignItems: 'center', width: '30%' },
-  utilIcon: { width: 60, height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  utilIcon: { width: 56, height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   utilLabel: { fontSize: 13, fontWeight: '700' },
-  sectionTitle: { fontSize: 18, fontWeight: '800', marginTop: 40, marginBottom: 15 },
+  sectionTitle: { fontSize: 18, fontWeight: '800', marginTop: 32, marginBottom: 15 },
   bookmarkGrid: { flexDirection: 'row', flexWrap: 'wrap', marginLeft: -5, marginRight: -5 },
   bookmarkTile: { width: ITEM_WIDTH, padding: 10, alignItems: 'center', marginBottom: 10 },
   faviconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
     borderWidth: 1,
   },
   faviconLetter: { fontWeight: '800', fontSize: 20 },
+  faviconImage: { width: 30, height: 30, borderRadius: 6 },
   bookmarkName: { fontSize: 12, fontWeight: '600', textAlign: 'center' },
   emptyBookmarks: {
     width: '100%',

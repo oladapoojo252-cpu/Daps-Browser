@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
-import { Clock, X, Trash2, ExternalLink } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Clock, X, Trash2, ExternalLink, Search } from 'lucide-react-native';
 
 interface HistoryProps {
   visible: boolean;
@@ -10,6 +11,7 @@ interface HistoryProps {
   onClear: () => void;
   onDeleteItem: (index: number) => void;
   isPrivate?: boolean;
+  isDarkMode?: boolean;
 }
 
 export const HistoryView = ({
@@ -19,20 +21,44 @@ export const HistoryView = ({
   onSelect,
   onClear,
   onDeleteItem,
-  isPrivate,
+  isPrivate = false,
+  isDarkMode = false,
 }: HistoryProps) => {
+  const insets = useSafeAreaInsets();
+  const [query, setQuery] = useState('');
+
+  const dark = isDarkMode || isPrivate;
   const theme = {
-    bg: isPrivate ? '#1A1A1A' : '#FFFFFF',
-    text: isPrivate ? '#FFFFFF' : '#000000',
-    item: isPrivate ? '#222222' : '#F5F5F7',
-    subtext: isPrivate ? '#888888' : '#999999',
-    border: isPrivate ? '#333333' : '#F0F0F0',
+    bg: dark ? '#1A1A1A' : '#FFFFFF',
+    text: dark ? '#FFFFFF' : '#000000',
+    item: dark ? '#222222' : '#F5F5F7',
+    subtext: dark ? '#888888' : '#999999',
+    border: dark ? '#333333' : '#F0F0F0',
+    inputBg: dark ? '#262626' : '#F0F0F2',
   };
 
+  const filteredHistory = history.filter(item => {
+    if (!query) return true;
+    const lower = query.toLowerCase();
+    return (
+      (item.title && item.title.toLowerCase().includes(lower)) ||
+      (item.url && item.url.toLowerCase().includes(lower))
+    );
+  });
+
   return (
-    <Modal visible={visible} animationType="slide" transparent={true}>
-      <View style={styles.overlay}>
-        <View style={[styles.sheet, { backgroundColor: theme.bg }]}>
+    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+        <View
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: theme.bg,
+              paddingBottom: Math.max(insets.bottom, 20),
+            },
+          ]}
+          onStartShouldSetResponder={() => true}
+        >
           {/* Header */}
           <View style={styles.header}>
             <Text style={[styles.title, { color: theme.text }]}>History</Text>
@@ -48,15 +74,36 @@ export const HistoryView = ({
             </View>
           </View>
 
+          {/* Search Bar */}
+          {history.length > 0 && (
+            <View style={[styles.searchBox, { backgroundColor: theme.inputBg }]}>
+              <Search size={16} color={theme.subtext} style={{ marginRight: 8 }} />
+              <TextInput
+                style={[styles.searchInput, { color: theme.text }]}
+                placeholder="Search history"
+                placeholderTextColor={theme.subtext}
+                value={query}
+                onChangeText={setQuery}
+              />
+              {query.length > 0 && (
+                <TouchableOpacity onPress={() => setQuery('')}>
+                  <X size={16} color={theme.subtext} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           {/* List */}
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
-            {history.length === 0 ? (
+            {filteredHistory.length === 0 ? (
               <View style={styles.emptyState}>
                 <Clock size={48} color={theme.subtext} />
-                <Text style={[styles.emptyText, { color: theme.subtext }]}>No history yet</Text>
+                <Text style={[styles.emptyText, { color: theme.subtext }]}>
+                  {query ? 'No matching pages found' : 'No history yet'}
+                </Text>
               </View>
             ) : (
-              history.map((item, index) => (
+              filteredHistory.map((item, index) => (
                 <View key={index} style={[styles.historyItem, { borderBottomColor: theme.border }]}>
                   <TouchableOpacity
                     style={styles.itemContent}
@@ -91,13 +138,17 @@ export const HistoryView = ({
             )}
           </ScrollView>
         </View>
-      </View>
+      </TouchableOpacity>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
   sheet: {
     height: '80%',
     borderTopLeftRadius: 30,
@@ -108,14 +159,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  title: { fontSize: 24, fontWeight: '800' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  clearBtn: { padding: 5 },
-  clearText: { color: '#FF3B30', fontWeight: '700', fontSize: 14 },
-  closeBtn: { padding: 5 },
-  list: { paddingBottom: 40 },
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  clearBtn: {
+    padding: 5,
+  },
+  clearText: {
+    color: '#FF3B30',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  closeBtn: {
+    padding: 5,
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    height: 40,
+    borderRadius: 12,
+    marginBottom: 14,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+  },
+  list: {
+    paddingBottom: 40,
+  },
   historyItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -137,11 +217,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  itemText: { flex: 1 },
-  itemTitle: { fontSize: 15, fontWeight: '600' },
-  itemUrl: { fontSize: 12, marginTop: 2 },
-  itemTime: { fontSize: 11, marginLeft: 10 },
-  deleteSingleBtn: { padding: 6 },
-  emptyState: { alignItems: 'center', marginTop: 100, gap: 10 },
-  emptyText: { fontSize: 16, fontWeight: '600' },
+  itemText: {
+    flex: 1,
+  },
+  itemTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  itemUrl: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  itemTime: {
+    fontSize: 11,
+    marginLeft: 10,
+  },
+  deleteSingleBtn: {
+    padding: 6,
+  },
+  emptyState: {
+    alignItems: 'center',
+    marginTop: 80,
+    gap: 10,
+  },
+  emptyText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
 });
