@@ -27,6 +27,9 @@ import {
   ChevronRight,
   Check,
   RefreshCw,
+  ShieldCheck,
+  Zap,
+  Code,
 } from 'lucide-react-native';
 import { DapsShieldMode } from '../utils/dapsShield';
 import { DownloadItem } from '../utils/downloadManager';
@@ -112,6 +115,9 @@ export const SettingsView = ({
     border: dark ? '#242426' : '#F0F0F2',
     card: dark ? '#1A1A1A' : '#F6F6F8',
     accent: dark ? '#FFFFFF' : '#000000',
+    accentText: dark ? '#000000' : '#FFFFFF',
+    switchThumb: dark ? '#000000' : '#FFFFFF',
+    switchTrackOff: dark ? '#3A3A3C' : '#D1D1D6',
     danger: '#FF3B30',
   };
 
@@ -307,8 +313,8 @@ export const SettingsView = ({
             <Switch
               value={settings.isAdBlockActive}
               onValueChange={v => onUpdateSettings({ isAdBlockActive: v })}
-              trackColor={{ false: '#767577', true: theme.accent }}
-              thumbColor={isPrivate ? '#000000' : '#FFFFFF'}
+              trackColor={{ false: theme.switchTrackOff, true: theme.accent }}
+              thumbColor={dark ? (settings.isAdBlockActive ? '#000000' : '#FFFFFF') : '#FFFFFF'}
             />
           </TouchableOpacity>
 
@@ -345,8 +351,8 @@ export const SettingsView = ({
             <Switch
               value={settings.httpsOnly}
               onValueChange={v => onUpdateSettings({ httpsOnly: v })}
-              trackColor={{ false: '#767577', true: theme.accent }}
-              thumbColor={isPrivate ? '#000000' : '#FFFFFF'}
+              trackColor={{ false: theme.switchTrackOff, true: theme.accent }}
+              thumbColor={dark ? (settings.httpsOnly ? '#000000' : '#FFFFFF') : '#FFFFFF'}
             />
           </View>
 
@@ -363,8 +369,8 @@ export const SettingsView = ({
             <Switch
               value={settings.doNotTrack}
               onValueChange={v => onUpdateSettings({ doNotTrack: v })}
-              trackColor={{ false: '#767577', true: theme.accent }}
-              thumbColor={isPrivate ? '#000000' : '#FFFFFF'}
+              trackColor={{ false: theme.switchTrackOff, true: theme.accent }}
+              thumbColor={dark ? (settings.doNotTrack ? '#000000' : '#FFFFFF') : '#FFFFFF'}
             />
           </View>
 
@@ -405,8 +411,8 @@ export const SettingsView = ({
             <Switch
               value={settings.isDesktop}
               onValueChange={v => onUpdateSettings({ isDesktop: v })}
-              trackColor={{ false: '#767577', true: theme.accent }}
-              thumbColor={isPrivate ? '#000000' : '#FFFFFF'}
+              trackColor={{ false: theme.switchTrackOff, true: theme.accent }}
+              thumbColor={dark ? (settings.isDesktop ? '#000000' : '#FFFFFF') : '#FFFFFF'}
             />
           </View>
 
@@ -423,7 +429,7 @@ export const SettingsView = ({
             <View style={styles.rowMain}>
               <Text style={[styles.rowTitle, { color: theme.text }]}>About Daps Browser</Text>
               <Text style={[styles.rowSubtitle, { color: theme.subtext }]}>
-                v2.0.0 • Daps Technologies
+                v2.1.0 • Daps Technologies
               </Text>
             </View>
             <ChevronRight size={18} color={theme.subtext} />
@@ -532,7 +538,7 @@ export const SettingsView = ({
                     clearHistory && { backgroundColor: theme.accent, borderColor: theme.accent },
                   ]}
                 >
-                  {clearHistory && <Check size={14} color={isPrivate ? '#000000' : '#FFFFFF'} />}
+                  {clearHistory && <Check size={14} color={theme.accentText} />}
                 </View>
                 <View style={styles.checkboxLabel}>
                   <Text style={[styles.checkboxTitle, { color: theme.text }]}>Browsing history</Text>
@@ -552,7 +558,7 @@ export const SettingsView = ({
                     clearCookies && { backgroundColor: theme.accent, borderColor: theme.accent },
                   ]}
                 >
-                  {clearCookies && <Check size={14} color={isPrivate ? '#000000' : '#FFFFFF'} />}
+                  {clearCookies && <Check size={14} color={theme.accentText} />}
                 </View>
                 <View style={styles.checkboxLabel}>
                   <Text style={[styles.checkboxTitle, { color: theme.text }]}>
@@ -574,7 +580,7 @@ export const SettingsView = ({
                     clearDownloadsList && { backgroundColor: theme.accent, borderColor: theme.accent },
                   ]}
                 >
-                  {clearDownloadsList && <Check size={14} color={isPrivate ? '#000000' : '#FFFFFF'} />}
+                  {clearDownloadsList && <Check size={14} color={theme.accentText} />}
                 </View>
                 <View style={styles.checkboxLabel}>
                   <Text style={[styles.checkboxTitle, { color: theme.text }]}>Download history</Text>
@@ -597,7 +603,7 @@ export const SettingsView = ({
                   onPress={handleExecuteClear}
                   disabled={isClearing}
                 >
-                  <Text style={[styles.confirmBtnText, { color: isPrivate ? '#000000' : '#FFFFFF' }]}>
+                  <Text style={[styles.confirmBtnText, { color: theme.accentText }]}>
                     {isClearing ? 'Clearing...' : 'Clear data'}
                   </Text>
                 </TouchableOpacity>
@@ -606,7 +612,7 @@ export const SettingsView = ({
           </TouchableOpacity>
         </Modal>
 
-        {/* SUB-MODAL 4: About Daps Browser */}
+        {/* SUB-MODAL 4: Professional Executive About & Credits */}
         <Modal
           visible={activeSubModal === 'about'}
           animationType="fade"
@@ -618,28 +624,129 @@ export const SettingsView = ({
             activeOpacity={1}
             onPress={() => setActiveSubModal('none')}
           >
-            <View style={[styles.dialogSheet, { backgroundColor: theme.card }]}>
-              <Text style={[styles.dialogTitle, { color: theme.text }]}>About Daps Browser</Text>
-              <View style={styles.aboutContent}>
-                <Text style={[styles.aboutText, { color: theme.text }]}>
-                  <Text style={{ fontWeight: '700' }}>Version:</Text> 2.0.0
-                </Text>
-                <Text style={[styles.aboutText, { color: theme.text }]}>
-                  <Text style={{ fontWeight: '700' }}>Engine:</Text> Daps Shield Protection Engine
-                </Text>
-                <Text style={[styles.aboutText, { color: theme.subtext, marginTop: 12 }]}>
-                  Designed and built by Daps Technologies.
-                </Text>
-              </View>
+            <View
+              style={[
+                styles.aboutSheet,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: theme.border,
+                },
+              ]}
+              onStartShouldSetResponder={() => true}
+            >
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.aboutScroll}>
+                {/* Brand Emblem */}
+                <View style={styles.aboutEmblemSection}>
+                  <View style={[styles.aboutLogoRing, { backgroundColor: dark ? '#222226' : '#E8E8EE', borderColor: theme.border }]}>
+                    <Shield size={36} color={dark ? '#FFFFFF' : '#000000'} fill={dark ? '#FFFFFF' : '#000000'} />
+                  </View>
+                  <Text style={[styles.aboutAppName, { color: theme.text }]}>DAPS BROWSER</Text>
+                  <Text style={[styles.aboutVersionBadge, { color: theme.subtext }]}>
+                    Version 2.1.0 • Stable Release
+                  </Text>
+                  <View style={styles.badgeRow}>
+                    <View style={[styles.pillBadge, { backgroundColor: dark ? '#2C2C2E' : '#E5E5EA' }]}>
+                      <Text style={[styles.pillBadgeText, { color: theme.text }]}>AdBlock Rust Core</Text>
+                    </View>
+                    <View style={[styles.pillBadge, { backgroundColor: dark ? '#2C2C2E' : '#E5E5EA' }]}>
+                      <Text style={[styles.pillBadgeText, { color: theme.text }]}>Zero Telemetry</Text>
+                    </View>
+                    <View style={[styles.pillBadge, { backgroundColor: dark ? '#2C2C2E' : '#E5E5EA' }]}>
+                      <Text style={[styles.pillBadgeText, { color: theme.text }]}>Media Radar</Text>
+                    </View>
+                  </View>
+                </View>
 
-              <TouchableOpacity
-                style={[styles.confirmBtn, { backgroundColor: theme.accent, marginTop: 22 }]}
-                onPress={() => setActiveSubModal('none')}
-              >
-                <Text style={[styles.confirmBtnText, { color: isPrivate ? '#000000' : '#FFFFFF' }]}>
-                  Close
-                </Text>
-              </TouchableOpacity>
+                {/* Mission */}
+                <View style={[styles.aboutSectionBox, { backgroundColor: dark ? '#111113' : '#FFFFFF', borderColor: theme.border }]}>
+                  <Text style={[styles.aboutSectionTitle, { color: theme.text }]}>Mission</Text>
+                  <Text style={[styles.aboutDescription, { color: theme.subtext }]}>
+                    Engineered to deliver an uncompromising, high-speed, and private web experience. Daps Browser automatically neutralizes invasive ads, trackers, cookie prompts, and surveillance telemetry while equipping you with on-device media sniffing and encrypted incognito browsing.
+                  </Text>
+                </View>
+
+                {/* Core Architecture */}
+                <View style={[styles.aboutSectionBox, { backgroundColor: dark ? '#111113' : '#FFFFFF', borderColor: theme.border }]}>
+                  <Text style={[styles.aboutSectionTitle, { color: theme.text }]}>Core Architecture</Text>
+
+                  <View style={styles.creditRow}>
+                    <View style={[styles.creditIconWrap, { backgroundColor: dark ? '#222224' : '#F2F2F7' }]}>
+                      <ShieldCheck size={16} color={theme.text} />
+                    </View>
+                    <View style={styles.creditMeta}>
+                      <Text style={[styles.creditLabel, { color: theme.text }]}>Protection Engine</Text>
+                      <Text style={[styles.creditValue, { color: theme.subtext }]}>Daps Shield Engine with Cosmetic Element Filtering</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.creditRow}>
+                    <View style={[styles.creditIconWrap, { backgroundColor: dark ? '#222224' : '#F2F2F7' }]}>
+                      <Zap size={16} color={theme.text} />
+                    </View>
+                    <View style={styles.creditMeta}>
+                      <Text style={[styles.creditLabel, { color: theme.text }]}>Filter Rulesets</Text>
+                      <Text style={[styles.creditValue, { color: theme.subtext }]}>Bundled EasyList, EasyPrivacy, AdGuard & Custom Anti-Ad Lists</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.creditRow}>
+                    <View style={[styles.creditIconWrap, { backgroundColor: dark ? '#222224' : '#F2F2F7' }]}>
+                      <Download size={16} color={theme.text} />
+                    </View>
+                    <View style={styles.creditMeta}>
+                      <Text style={[styles.creditLabel, { color: theme.text }]}>Media Detection Pipeline</Text>
+                      <Text style={[styles.creditValue, { color: theme.subtext }]}>Real-time XHR, Fetch & Subframe Stream Sniffer</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Engineering & Credits */}
+                <View style={[styles.aboutSectionBox, { backgroundColor: dark ? '#111113' : '#FFFFFF', borderColor: theme.border }]}>
+                  <Text style={[styles.aboutSectionTitle, { color: theme.text }]}>Leadership & Engineering</Text>
+
+                  <View style={styles.creditRow}>
+                    <View style={[styles.creditIconWrap, { backgroundColor: dark ? '#222224' : '#F2F2F7' }]}>
+                      <Code size={16} color={theme.text} />
+                    </View>
+                    <View style={styles.creditMeta}>
+                      <Text style={[styles.creditLabel, { color: theme.text }]}>Lead Architect & Engineer</Text>
+                      <Text style={[styles.creditValue, { color: theme.text, fontWeight: '700' }]}>Dapo Ojo</Text>
+                      <Text style={[styles.creditValue, { color: theme.subtext }]}>Founder, Daps Technologies</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.creditRow}>
+                    <View style={[styles.creditIconWrap, { backgroundColor: dark ? '#222224' : '#F2F2F7' }]}>
+                      <Globe size={16} color={theme.text} />
+                    </View>
+                    <View style={styles.creditMeta}>
+                      <Text style={[styles.creditLabel, { color: theme.text }]}>Open Source Acknowledgments</Text>
+                      <Text style={[styles.creditValue, { color: theme.subtext }]}>
+                        Built upon open privacy specifications from Brave Software (adblock-rust), EasyList authors, React Native, and the Expo community.
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Copyright & Seal */}
+                <View style={styles.aboutFooter}>
+                  <Text style={[styles.copyrightText, { color: theme.subtext }]}>
+                    © 2026 Daps Technologies. All rights reserved.
+                  </Text>
+                  <Text style={[styles.mottoText, { color: theme.subtext }]}>
+                    Private. Fast. Uncompromised.
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.confirmBtn, { backgroundColor: theme.accent, marginTop: 18, marginBottom: 8 }]}
+                  onPress={() => setActiveSubModal('none')}
+                >
+                  <Text style={[styles.confirmBtnText, { color: theme.accentText }]}>
+                    Done
+                  </Text>
+                </TouchableOpacity>
+              </ScrollView>
             </View>
           </TouchableOpacity>
         </Modal>
@@ -791,12 +898,109 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  aboutContent: {
-    gap: 6,
-    marginTop: 10,
+  aboutSheet: {
+    width: '100%',
+    maxWidth: 420,
+    maxHeight: '85%',
+    borderRadius: 24,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
-  aboutText: {
-    fontSize: 14,
-    lineHeight: 20,
+  aboutScroll: {
+    padding: 22,
+    gap: 14,
+  },
+  aboutEmblemSection: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  aboutLogoRing: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    marginBottom: 12,
+  },
+  aboutAppName: {
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+  },
+  aboutVersionBadge: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 3,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 12,
+  },
+  pillBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  pillBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  aboutSectionBox: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 10,
+  },
+  aboutSectionTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  aboutDescription: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  creditRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  creditIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  creditMeta: {
+    flex: 1,
+  },
+  creditLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  creditValue: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 1,
+  },
+  aboutFooter: {
+    alignItems: 'center',
+    paddingTop: 8,
+    gap: 4,
+  },
+  copyrightText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  mottoText: {
+    fontSize: 11,
+    fontStyle: 'italic',
   },
 });

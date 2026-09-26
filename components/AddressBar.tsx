@@ -73,7 +73,7 @@ export const AddressBar = ({
               <Shield
                 size={16}
                 color={theme.text}
-                fill={isPrivate ? '#FFFFFF' : '#000000'}
+                fill={dark ? '#FFFFFF' : '#000000'}
               />
             ) : isSecure ? (
               <Lock size={15} color={theme.icon} />

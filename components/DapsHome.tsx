@@ -14,6 +14,14 @@ import {
 import { LayoutGrid, Zap, Globe, History, Download, ShieldCheck } from 'lucide-react-native';
 import { calculateShieldSavings } from '../utils/dapsShield';
 
+import {
+  extractDomain,
+  getSynchronousCachedFavicon,
+  cacheFavicon,
+  subscribeFavicon,
+  prefetchBookmarkFavicons,
+} from '../utils/faviconCache';
+
 const { width } = Dimensions.get('window');
 const ITEM_WIDTH = (width - 40) / 3;
 
@@ -40,17 +48,41 @@ const BookmarkFavicon = ({
   theme: any;
 }) => {
   const [hasError, setHasError] = useState(false);
+  const domain = extractDomain(url);
+  const [faviconUri, setFaviconUri] = useState<string | null>(() => getSynchronousCachedFavicon(url));
 
-  let domain = '';
-  try {
-    if (url && url !== 'home') {
-      domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname;
+  useEffect(() => {
+    let isMounted = true;
+    if (!domain) return;
+
+    // Check synchronous cache first
+    const syncCached = getSynchronousCachedFavicon(url);
+    if (syncCached) {
+      setFaviconUri(syncCached);
+      return;
     }
-  } catch {}
 
-  const faviconUri = domain
-    ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128`
-    : '';
+    // Subscribe to background download ready event
+    const unsubscribe = subscribeFavicon(domain, (localUri) => {
+      if (isMounted) {
+        setFaviconUri(localUri);
+        setHasError(false);
+      }
+    });
+
+    // Request on-device caching in background
+    cacheFavicon(url).then(cached => {
+      if (isMounted && cached) {
+        setFaviconUri(cached);
+        setHasError(false);
+      }
+    }).catch(() => {});
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [url, domain]);
 
   return (
     <View
@@ -146,6 +178,12 @@ export const DapsHome = ({
     ).start();
   }, [pulseAnim, floatAnim1, floatAnim2]);
 
+  useEffect(() => {
+    if (bookmarks && bookmarks.length > 0) {
+      prefetchBookmarkFavicons(bookmarks);
+    }
+  }, [bookmarks]);
+
   const handleLongPress = (item: { title: string; url: string }) => {
     Alert.alert('Remove Bookmark', `Delete "${item.title}" from your library?`, [
       { text: 'Cancel', style: 'cancel' },
@@ -159,7 +197,7 @@ export const DapsHome = ({
     text: dark ? '#FFFFFF' : '#000000',
     card: dark ? '#1A1A1A' : '#F5F5F7',
     border: dark ? '#333333' : '#EEEEEE',
-    subtext: dark ? '#888888' : '#777777',
+    subtext: dark ? '#8E8E93' : '#777777',
     iconBg: dark ? '#222222' : '#F9F9F9',
     badgeBg: dark ? '#333333' : '#000000',
   };
@@ -193,7 +231,7 @@ export const DapsHome = ({
             styles.ambientDot,
             styles.dotOne,
             {
-              backgroundColor: isPrivate ? '#333333' : '#E0E0E5',
+              backgroundColor: dark ? '#2C2C2E' : '#E0E0E5',
               transform: [{ translateY: floatAnim1 }],
             },
           ]}
@@ -203,7 +241,7 @@ export const DapsHome = ({
             styles.ambientDot,
             styles.dotTwo,
             {
-              backgroundColor: isPrivate ? '#2A2A2A' : '#E8E8EE',
+              backgroundColor: dark ? '#242426' : '#E8E8EE',
               transform: [{ translateY: floatAnim2 }],
             },
           ]}
@@ -230,13 +268,13 @@ export const DapsHome = ({
             style={[
               styles.pulseRing,
               {
-                borderColor: isPrivate ? '#444444' : '#DDDDDD',
+                borderColor: dark ? '#444444' : '#DDDDDD',
                 transform: [{ scale: pulseAnim }],
               },
             ]}
           />
-          <View style={[styles.centerOrb, { backgroundColor: isPrivate ? '#FFFFFF' : '#000000' }]}>
-            <ShieldCheck size={14} color={isPrivate ? '#000000' : '#FFFFFF'} />
+          <View style={[styles.centerOrb, { backgroundColor: dark ? '#FFFFFF' : '#000000' }]}>
+            <ShieldCheck size={14} color={dark ? '#000000' : '#FFFFFF'} />
           </View>
         </View>
       </TouchableOpacity>
@@ -268,7 +306,7 @@ export const DapsHome = ({
       <View style={styles.bookmarkGrid}>
         {bookmarks.length === 0 ? (
           <View style={[styles.emptyBookmarks, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={styles.emptyText}>Your saved sites will appear here.</Text>
+            <Text style={[styles.emptyText, { color: theme.subtext }]}>Your saved sites will appear here.</Text>
           </View>
         ) : (
           bookmarks.map((bookmark, index) => (

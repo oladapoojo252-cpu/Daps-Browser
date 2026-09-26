@@ -128,7 +128,7 @@ export const ShieldsModal = ({
               style={[
                 styles.optionRow,
                 shieldsMode === 'standard' && {
-                  backgroundColor: isPrivate ? '#2C2C2E' : '#EAEAEF',
+                  backgroundColor: dark ? '#2C2C2E' : '#EAEAEF',
                 },
                 { borderBottomColor: theme.border },
               ]}
@@ -147,7 +147,7 @@ export const ShieldsModal = ({
               style={[
                 styles.optionRow,
                 shieldsMode === 'aggressive' && {
-                  backgroundColor: isPrivate ? '#2C2C2E' : '#EAEAEF',
+                  backgroundColor: dark ? '#2C2C2E' : '#EAEAEF',
                 },
               ]}
               onPress={() => onSetShieldsMode('aggressive')}

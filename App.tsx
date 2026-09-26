@@ -39,6 +39,7 @@ import {
 import { adblockManager } from './utils/adblockEngine';
 import { DapsShieldMode } from './utils/dapsShield';
 import { SnifferModal, SniffedMediaItem } from './components/SnifferModal';
+import { prefetchBookmarkFavicons, cacheFavicon } from './utils/faviconCache';
 import {
   X,
   Plus,
@@ -193,7 +194,11 @@ function MainBrowserApp() {
         ]);
 
         if (savedHistory) setHistory(JSON.parse(savedHistory));
-        if (savedBookmarks) setBookmarks(JSON.parse(savedBookmarks));
+        if (savedBookmarks) {
+          const parsed = JSON.parse(savedBookmarks);
+          setBookmarks(parsed);
+          prefetchBookmarkFavicons(parsed);
+        }
         if (savedDownloads && Array.isArray(savedDownloads)) setDownloads(savedDownloads);
         if (savedSettings) {
           const parsed = JSON.parse(savedSettings);
@@ -612,10 +617,9 @@ function MainBrowserApp() {
             if (exists) {
               setBookmarks(prev => prev.filter(b => b.url !== currentTab.url));
             } else {
-              setBookmarks(prev => [
-                { title: currentTab.title || currentTab.url.split('/')[2] || 'Site', url: currentTab.url },
-                ...prev,
-              ]);
+              const newBm = { title: currentTab.title || currentTab.url.split('/')[2] || 'Site', url: currentTab.url };
+              cacheFavicon(currentTab.url).catch(() => {});
+              setBookmarks(prev => [newBm, ...prev]);
             }
           }}
           isBookmarked={bookmarks.some(b => b.url === currentTab.url)}
