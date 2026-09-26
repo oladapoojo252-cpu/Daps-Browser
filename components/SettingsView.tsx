@@ -709,18 +709,6 @@ export const SettingsView = ({
                       <Text style={[styles.creditValue, { color: theme.subtext }]}>Founder, Daps Technologies</Text>
                     </View>
                   </View>
-
-                  <View style={styles.creditRow}>
-                    <View style={[styles.creditIconWrap, { backgroundColor: dark ? '#222224' : '#F2F2F7' }]}>
-                      <Globe size={16} color={theme.text} />
-                    </View>
-                    <View style={styles.creditMeta}>
-                      <Text style={[styles.creditLabel, { color: theme.text }]}>Open Source Acknowledgments</Text>
-                      <Text style={[styles.creditValue, { color: theme.subtext }]}>
-                        Built upon open privacy specifications from Brave Software (adblock-rust), EasyList authors, React Native, and the Expo community.
-                      </Text>
-                    </View>
-                  </View>
                 </View>
 
                 {/* Copyright & Seal */}
