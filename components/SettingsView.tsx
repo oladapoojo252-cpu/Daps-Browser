@@ -619,11 +619,13 @@ export const SettingsView = ({
           transparent={true}
           onRequestClose={() => setActiveSubModal('none')}
         >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setActiveSubModal('none')}
-          >
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity
+              style={StyleSheet.absoluteFill}
+              activeOpacity={1}
+              onPress={() => setActiveSubModal('none')}
+            />
+
             <View
               style={[
                 styles.aboutSheet,
@@ -632,9 +634,13 @@ export const SettingsView = ({
                   borderColor: theme.border,
                 },
               ]}
-              onStartShouldSetResponder={() => true}
             >
-              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.aboutScroll}>
+              <ScrollView
+                showsVerticalScrollIndicator={true}
+                nestedScrollEnabled={true}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={styles.aboutScroll}
+              >
                 {/* Brand Emblem */}
                 <View style={styles.aboutEmblemSection}>
                   <View style={[styles.aboutLogoRing, { backgroundColor: dark ? '#222226' : '#E8E8EE', borderColor: theme.border }]}>
@@ -644,17 +650,6 @@ export const SettingsView = ({
                   <Text style={[styles.aboutVersionBadge, { color: theme.subtext }]}>
                     Version 2.1.0 • Stable Release
                   </Text>
-                  <View style={styles.badgeRow}>
-                    <View style={[styles.pillBadge, { backgroundColor: dark ? '#2C2C2E' : '#E5E5EA' }]}>
-                      <Text style={[styles.pillBadgeText, { color: theme.text }]}>AdBlock Rust Core</Text>
-                    </View>
-                    <View style={[styles.pillBadge, { backgroundColor: dark ? '#2C2C2E' : '#E5E5EA' }]}>
-                      <Text style={[styles.pillBadgeText, { color: theme.text }]}>Zero Telemetry</Text>
-                    </View>
-                    <View style={[styles.pillBadge, { backgroundColor: dark ? '#2C2C2E' : '#E5E5EA' }]}>
-                      <Text style={[styles.pillBadgeText, { color: theme.text }]}>Media Radar</Text>
-                    </View>
-                  </View>
                 </View>
 
                 {/* Mission */}
@@ -748,7 +743,7 @@ export const SettingsView = ({
                 </TouchableOpacity>
               </ScrollView>
             </View>
-          </TouchableOpacity>
+          </View>
         </Modal>
       </View>
     </Modal>
@@ -932,22 +927,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginTop: 3,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 12,
-  },
-  pillBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  pillBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
   },
   aboutSectionBox: {
     borderRadius: 16,
