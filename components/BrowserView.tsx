@@ -271,20 +271,20 @@ export const BrowserView = forwardRef<any, BrowserViewProps>(
         return false;
       }
 
-      // 2. Direct downloadable archives / media / documents
-      if (isDownloadableUrl(targetUrl)) {
-        triggerDownload(targetUrl);
-        return false;
-      }
-
-      // 3. Subframe / iframe requests: Allow video players and embed frames to load (never show "Embedding blocked")
+      // 2. Subframe / iframe requests: ALWAYS allow video players and embed frames to load (never block embeds)
       if (request.isTopFrame === false) {
         return true;
       }
 
-      // 4. Video & Media Embed Whitelist (Always allowed, never blocked)
+      // 3. Video & Media Embed Whitelist (Always allowed, never blocked)
       if (isWhitelistedMedia(targetUrl)) {
         return true;
+      }
+
+      // 4. Direct downloadable archives / media / documents (ONLY for top-level non-media navigation)
+      if (isDownloadableUrl(targetUrl)) {
+        triggerDownload(targetUrl);
+        return false;
       }
 
       // 5. Ad network redirect & popup block (ONLY if NOT a download and NOT media)

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { ChevronLeft, ChevronRight, Home, ArrowDownToLine } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Home, Radar } from 'lucide-react-native';
 
 export const BottomDock = ({
   canGoBack,
@@ -57,16 +57,29 @@ export const BottomDock = ({
           </View>
         </TouchableOpacity>
 
-        {/* Smart Download / Media Sniffer Button */}
+        {/* Unique Futuristic Media Sniffer Radar Button */}
         <TouchableOpacity
           onPress={onOpenSniffer}
           style={styles.iconButton}
           activeOpacity={0.7}
         >
-          <View style={styles.snifferBtnWrapper}>
-            <ArrowDownToLine
+          <View
+            style={[
+              styles.snifferBtnWrapper,
+              sniffedMediaCount > 0 && [
+                styles.snifferBtnActive,
+                { backgroundColor: dark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)' },
+              ],
+            ]}
+          >
+            <Radar
               size={21}
-              color={dark ? '#FFFFFF' : '#000000'}
+              color={
+                sniffedMediaCount > 0
+                  ? (dark ? '#FFFFFF' : '#000000')
+                  : (dark ? '#CCCCCC' : '#444444')
+              }
+              strokeWidth={sniffedMediaCount > 0 ? 2.3 : 1.8}
             />
             {sniffedMediaCount > 0 && (
               <View
@@ -149,6 +162,12 @@ const styles = StyleSheet.create({
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  snifferBtnActive: {
+    transform: [{ scale: 1.05 }],
   },
   snifferBadge: {
     position: 'absolute',

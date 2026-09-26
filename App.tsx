@@ -127,6 +127,39 @@ function MainBrowserApp() {
   const [tabToast, setTabToast] = useState<{ title: string; tabId: string } | null>(null);
   const toastAnim = useRef(new Animated.Value(120)).current;
 
+  // Auto-hiding Floating Bottom Dock Animation (disappears on scroll down, restores on scroll up)
+  const dockTranslateAnim = useRef(new Animated.Value(0)).current;
+  const isDockHidden = useRef(false);
+
+  const handleScrollDirection = useCallback((direction: 'up' | 'down') => {
+    if (direction === 'down' && !isDockHidden.current) {
+      isDockHidden.current = true;
+      Animated.timing(dockTranslateAnim, {
+        toValue: 130,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    } else if (direction === 'up' && isDockHidden.current) {
+      isDockHidden.current = false;
+      Animated.timing(dockTranslateAnim, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, []);
+
+  const showDock = useCallback(() => {
+    if (isDockHidden.current) {
+      isDockHidden.current = false;
+      Animated.timing(dockTranslateAnim, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, []);
+
   const browserRef = useRef<any>(null);
   const currentTab = tabs.find(t => t.id === activeTabId) || tabs[0] || { id: '1', url: 'home', title: 'Home', isIncognito: false };
   const isPrivate = Boolean(currentTab.isIncognito);
@@ -654,7 +687,7 @@ function MainBrowserApp() {
             style={[
               styles.newTabToast,
               {
-                bottom: 14,
+                bottom: Math.max(insets.bottom, 12) + 76,
                 transform: [{ translateY: toastAnim }],
                 backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
                 borderColor: isDark ? '#3A3A3C' : '#E5E5EA',
@@ -694,7 +727,7 @@ function MainBrowserApp() {
           </Animated.View>
         )}
 
-        {/* Main Content Area: fills all space between address bar and bottom dock */}
+        {/* Main Content Area */}
         <Animated.View style={[styles.content, { opacity: tabFadeAnim }]}>
           {currentTab.url === 'home' ? (
             <DapsHome
@@ -728,6 +761,7 @@ function MainBrowserApp() {
               }
               onShieldBlocked={handleShieldBlocked}
               onOpenNewTab={handleOpenNewTab}
+              onScrollDirection={handleScrollDirection}
               onMediaDetected={items => handleMediaDetected(currentTab.id, items)}
               onDownloadComplete={file => {
                 setDownloads(prev => [file, ...prev]);
@@ -736,35 +770,45 @@ function MainBrowserApp() {
           )}
         </Animated.View>
 
-        {/* Bottom Navigation Section: Sits cleanly in layout flow ABOVE the Android navigation bar, never overlapping webview content */}
-        <View
+        {/* Truly Floating Bottom Dock with Scroll Auto-Hide */}
+        <Animated.View
+          pointerEvents="box-none"
           style={[
-            styles.bottomDockContainer,
+            styles.dockWrapper,
             {
-              paddingBottom: Math.max(insets.bottom, 8),
-              backgroundColor: theme.bg,
-              borderTopColor: isDark ? '#1C1C1E' : '#E5E5EA',
+              bottom: Math.max(insets.bottom, 12) + 6,
+              transform: [{ translateY: dockTranslateAnim }],
             },
           ]}
         >
           <BottomDock
             canGoBack={navState.canGoBack}
             canGoForward={navState.canGoForward}
-            onBack={() => browserRef.current?.goBack()}
-            onForward={() => browserRef.current?.goForward()}
+            onBack={() => {
+              showDock();
+              browserRef.current?.goBack();
+            }}
+            onForward={() => {
+              showDock();
+              browserRef.current?.goForward();
+            }}
             onHome={handleHome}
             onTabs={() => {
+              showDock();
               setActiveTabSegment(isPrivate ? 'incognito' : 'regular');
               setIsTabSwitcherVisible(true);
             }}
             onLongPressTabs={handleLongPressTabs}
-            onOpenSniffer={() => setIsSnifferVisible(true)}
+            onOpenSniffer={() => {
+              showDock();
+              setIsSnifferVisible(true);
+            }}
             sniffedMediaCount={currentTabMedia.length}
             isPrivate={isPrivate}
             isDarkMode={isDark}
             tabCount={tabs.length}
           />
-        </View>
+        </Animated.View>
       </View>
 
       {/* Smart Download / Media Sniffer Modal */}

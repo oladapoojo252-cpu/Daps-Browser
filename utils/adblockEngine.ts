@@ -610,13 +610,38 @@ class DapsAdblockManager {
     );
   };
 
-  // If running inside a subframe (iframe) AND this is a media player, NEVER interfere!
+  // If running inside a subframe (iframe), NEVER interfere with media or player scripts!
   try {
     if (window !== window.top) {
-      var currentHref = (window.location.href || '').toLowerCase();
-      if (isVideoHost(currentHref)) {
-        return; // Video player runs natively without blocker interference!
-      }
+      // Sniff media inside iframe safely without touching DOM elements or blocking scripts
+      var checkFrameVideos = function() {
+        try {
+          var vids = document.querySelectorAll('video, audio, source');
+          var found = [];
+          for (var vi = 0; vi < vids.length; vi++) {
+            var vs = vids[vi].currentSrc || vids[vi].src || vids[vi].getAttribute('src') || '';
+            if (vs && !vs.startsWith('blob:http') && !vs.startsWith('mediasource:')) {
+              var ext = (vs.match(/\.([a-z0-9]+)(\?|$)/i) || [, 'mp4'])[1].toLowerCase();
+              found.push({
+                url: vs,
+                title: document.title || 'Embedded Video',
+                type: vids[vi].tagName === 'AUDIO' ? 'audio' : 'video',
+                extension: ext
+              });
+            }
+          }
+          if (found.length > 0 && window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'media_detected',
+              items: found
+            }));
+          }
+        } catch(e) {}
+      };
+      setTimeout(checkFrameVideos, 800);
+      setTimeout(checkFrameVideos, 2500);
+      window.addEventListener('play', checkFrameVideos, true);
+      return; // Do NOT defuse or inject cosmetic styles inside subframes!
     }
   } catch(e) {}
 
@@ -974,13 +999,13 @@ class DapsAdblockManager {
     try {
       var lastScrollY = window.scrollY || 0;
       var scrollTicking = false;
-      window.addEventListener('scroll', function() {
+      var onScrollEvt = function() {
         if (scrollTicking) return;
         scrollTicking = true;
         requestAnimationFrame(function() {
-          var currY = window.scrollY || 0;
+          var currY = window.scrollY || (document.documentElement ? document.documentElement.scrollTop : 0) || (document.body ? document.body.scrollTop : 0) || 0;
           var diff = currY - lastScrollY;
-          if (Math.abs(diff) >= 10) {
+          if (Math.abs(diff) >= 8) {
             var direction = diff > 0 ? 'down' : 'up';
             if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
               window.ReactNativeWebView.postMessage(JSON.stringify({
@@ -993,7 +1018,9 @@ class DapsAdblockManager {
           }
           scrollTicking = false;
         });
-      }, { passive: true });
+      };
+      window.addEventListener('scroll', onScrollEvt, { passive: true, capture: true });
+      document.addEventListener('scroll', onScrollEvt, { passive: true, capture: true });
     } catch(e) {}
 
     // B. Download link, Magnet URI & Blob URL Interceptor
@@ -1064,8 +1091,95 @@ class DapsAdblockManager {
       }, true); // Capture phase ensures we intercept before host scripts stop propagation
     } catch(e) {}
 
-    // C. Smart Media & Download Sniffer Scanner
+    // C. Supercharged Smart Media & Download Sniffer Scanner
     try {
+      var detectedMediaMap = {};
+
+      var reportMedia = function(items) {
+        if (!items || !items.length) return;
+        var toSend = [];
+        for (var idx = 0; idx < items.length; idx++) {
+          var itm = items[idx];
+          if (!itm || !itm.url) continue;
+          var u = itm.url.trim();
+          if (!u || u.startsWith('blob:http') || u.startsWith('mediasource:') || u.startsWith('javascript:')) continue;
+          if (detectedMediaMap[u]) continue;
+          detectedMediaMap[u] = true;
+          toSend.push(itm);
+        }
+        if (toSend.length > 0 && window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'media_detected',
+            items: toSend.slice(0, 30)
+          }));
+        }
+      };
+
+      var inspectUrl = function(rawUrl, defaultTitle) {
+        if (!rawUrl || typeof rawUrl !== 'string') return;
+        var clean = rawUrl.split('#')[0];
+        var lower = clean.toLowerCase();
+
+        var match = lower.match(/\.(mp4|m3u8|mpd|webm|mkv|mov|flv|avi|3gp|ts|m4v|mp3|m4a|wav|flac|aac|ogg|opus|pdf|zip|rar|7z|apk|epub|docx?|xlsx?)(\?|$)/);
+        if (match) {
+          var ext = match[1];
+          var type = 'other';
+          if (['mp4', 'm3u8', 'mpd', 'webm', 'mkv', 'mov', 'flv', 'avi', '3gp', 'ts', 'm4v'].indexOf(ext) !== -1) type = 'video';
+          else if (['mp3', 'm4a', 'wav', 'flac', 'aac', 'ogg', 'opus'].indexOf(ext) !== -1) type = 'audio';
+          else if (['pdf', 'epub', 'doc', 'docx', 'xls', 'xlsx'].indexOf(ext) !== -1) type = 'document';
+          else if (['zip', 'rar', '7z', 'apk'].indexOf(ext) !== -1) type = 'archive';
+
+          var title = (defaultTitle || document.title || 'Media File').trim();
+          reportMedia([{
+            url: rawUrl,
+            title: title.length > 80 ? title.substring(0, 80) : title,
+            type: type,
+            extension: ext
+          }]);
+        }
+      };
+
+      // 1. Prototype hook on HTMLMediaElement.prototype.src
+      try {
+        var proto = window.HTMLMediaElement ? window.HTMLMediaElement.prototype : null;
+        if (proto) {
+          var origSrcDesc = Object.getOwnPropertyDescriptor(proto, 'src');
+          if (origSrcDesc && origSrcDesc.set) {
+            Object.defineProperty(proto, 'src', {
+              set: function(val) {
+                try { if (val) inspectUrl(val, 'HTML5 Stream'); } catch(e) {}
+                return origSrcDesc.set.call(this, val);
+              },
+              get: function() {
+                return origSrcDesc.get.call(this);
+              }
+            });
+          }
+        }
+      } catch(e) {}
+
+      // 2. Network hooks on fetch & XMLHttpRequest
+      try {
+        var origFetch = window.fetch;
+        if (origFetch) {
+          window.fetch = function(input, init) {
+            try {
+              var fUrl = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+              if (fUrl) inspectUrl(fUrl, 'Network Stream');
+            } catch(e) {}
+            return origFetch.apply(this, arguments);
+          };
+        }
+
+        var origXhr = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url) {
+          try {
+            if (url) inspectUrl(url.toString(), 'XHR Stream');
+          } catch(e) {}
+          return origXhr.apply(this, arguments);
+        };
+      } catch(e) {}
+
       var scanMedia = function() {
         try {
           var results = [];
@@ -1152,19 +1266,53 @@ class DapsAdblockManager {
             }
           }
 
-          if (results.length > 0 && window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'media_detected',
-              items: results.slice(0, 30)
-            }));
+          // 4. Performance resource timings (network media requests)
+          if (window.performance && window.performance.getEntriesByType) {
+            var resources = window.performance.getEntriesByType('resource');
+            for (var r = 0; r < resources.length; r++) {
+              var rUrl = resources[r].name || '';
+              if (rUrl && mediaExtRegex.test(rUrl)) {
+                var extResMatch = rUrl.match(/\.([a-z0-9]+)(\?|$)/i);
+                var extR = extResMatch ? extResMatch[1].toLowerCase() : 'mp4';
+                var rType = 'other';
+                if (['mp4', 'mkv', 'avi', 'webm', 'mov', 'flv', 'wmv', '3gp', 'm4v', 'ts', 'm3u8'].indexOf(extR) !== -1) rType = 'video';
+                else if (['mp3', 'm4a', 'wav', 'flac', 'aac', 'ogg', 'opus'].indexOf(extR) !== -1) rType = 'audio';
+                results.push({
+                  url: rUrl,
+                  title: document.title || 'Media Resource',
+                  type: rType,
+                  extension: extR
+                });
+              }
+            }
           }
+
+          // 5. Embedded Video Iframes
+          var iframes = document.querySelectorAll('iframe');
+          for (var f = 0; f < iframes.length; f++) {
+            var ifr = iframes[f];
+            var ifrSrc = ifr.src || ifr.getAttribute('src') || '';
+            if (ifrSrc && isVideoHost(ifrSrc)) {
+              results.push({
+                url: ifrSrc,
+                title: ifr.getAttribute('title') || document.title || 'Embedded Video Stream',
+                type: 'video',
+                extension: 'embed'
+              });
+            }
+          }
+
+          reportMedia(results);
         } catch(err) {}
       };
 
-      // Run scanner on multiple lifecycles
-      setTimeout(scanMedia, 800);
-      setTimeout(scanMedia, 2500);
+      // Multi-lifecycle triggers
+      setTimeout(scanMedia, 600);
+      setTimeout(scanMedia, 2000);
+      setTimeout(scanMedia, 4500);
       window.addEventListener('play', scanMedia, true);
+      window.addEventListener('playing', scanMedia, true);
+      window.addEventListener('loadeddata', scanMedia, true);
     } catch(e) {}
   };
 
