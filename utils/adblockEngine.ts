@@ -1063,6 +1063,109 @@ class DapsAdblockManager {
         }
       }, true); // Capture phase ensures we intercept before host scripts stop propagation
     } catch(e) {}
+
+    // C. Smart Media & Download Sniffer Scanner
+    try {
+      var scanMedia = function() {
+        try {
+          var results = [];
+          var seen = {};
+          var mediaExtRegex = /\.(mp4|mkv|avi|webm|mov|flv|wmv|3gp|m4v|mp3|m4a|wav|flac|aac|ogg|opus|pdf|zip|rar|7z|tar|gz|bz2|apk|epub|doc|docx|xls|xlsx|ppt|pptx|srt|vtt)(\?|$)/i;
+
+          // 1. Inspect HTML5 <video> elements & child <source>
+          var videos = document.querySelectorAll('video');
+          for (var i = 0; i < videos.length; i++) {
+            var v = videos[i];
+            var vSrc = v.currentSrc || v.src || '';
+            if (vSrc && !seen[vSrc] && !vSrc.startsWith('blob:http') && !vSrc.startsWith('mediasource:')) {
+              seen[vSrc] = true;
+              var extMatch = vSrc.match(/\.([a-z0-9]+)(\?|$)/i);
+              var ext = extMatch ? extMatch[1].toLowerCase() : 'mp4';
+              results.push({
+                url: vSrc,
+                title: v.getAttribute('title') || v.getAttribute('aria-label') || document.title || 'Video Media',
+                type: 'video',
+                extension: ext
+              });
+            }
+            var vSources = v.querySelectorAll('source');
+            for (var s = 0; s < vSources.length; s++) {
+              var sSrc = vSources[s].src || '';
+              if (sSrc && !seen[sSrc]) {
+                seen[sSrc] = true;
+                results.push({
+                  url: sSrc,
+                  title: vSources[s].getAttribute('title') || document.title || 'Video Stream',
+                  type: 'video',
+                  extension: (sSrc.match(/\.([a-z0-9]+)(\?|$)/i) || [, 'mp4'])[1].toLowerCase()
+                });
+              }
+            }
+          }
+
+          // 2. Inspect HTML5 <audio> elements
+          var audios = document.querySelectorAll('audio');
+          for (var a = 0; a < audios.length; a++) {
+            var au = audios[a];
+            var aSrc = au.currentSrc || au.src || '';
+            if (aSrc && !seen[aSrc]) {
+              seen[aSrc] = true;
+              results.push({
+                url: aSrc,
+                title: au.getAttribute('title') || document.title || 'Audio Media',
+                type: 'audio',
+                extension: (aSrc.match(/\.([a-z0-9]+)(\?|$)/i) || [, 'mp3'])[1].toLowerCase()
+              });
+            }
+          }
+
+          // 3. Inspect downloadable anchor links (<a href="...">)
+          var links = document.querySelectorAll('a[href]');
+          for (var j = 0; j < links.length; j++) {
+            var link = links[j];
+            var href = link.href || '';
+            if (!href || href.startsWith('javascript:') || href.startsWith('#') || seen[href]) continue;
+
+            var hasDlAttr = link.hasAttribute('download');
+            var extMatch2 = href.match(mediaExtRegex);
+
+            if (hasDlAttr || extMatch2) {
+              seen[href] = true;
+              var dlAttrVal = link.getAttribute('download');
+              var ext2 = extMatch2 ? extMatch2[1].toLowerCase() : (dlAttrVal ? dlAttrVal.split('.').pop() : 'file');
+              var linkText = (link.innerText || link.textContent || link.getAttribute('title') || dlAttrVal || '').trim();
+              var lastSegment = href.split('/').pop() || '';
+              var linkTitle = linkText.length > 2 && linkText.length < 80 ? linkText : (lastSegment.split('?')[0] || 'Download File');
+
+              var mType = 'other';
+              if (['mp4', 'mkv', 'avi', 'webm', 'mov', 'flv', 'wmv', '3gp'].indexOf(ext2) !== -1) mType = 'video';
+              else if (['mp3', 'm4a', 'wav', 'flac', 'aac', 'ogg', 'opus'].indexOf(ext2) !== -1) mType = 'audio';
+              else if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'epub'].indexOf(ext2) !== -1) mType = 'document';
+              else if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'apk'].indexOf(ext2) !== -1) mType = 'archive';
+
+              results.push({
+                url: href,
+                title: decodeURIComponent(linkTitle),
+                type: mType,
+                extension: ext2
+              });
+            }
+          }
+
+          if (results.length > 0 && window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'media_detected',
+              items: results.slice(0, 30)
+            }));
+          }
+        } catch(err) {}
+      };
+
+      // Run scanner on multiple lifecycles
+      setTimeout(scanMedia, 800);
+      setTimeout(scanMedia, 2500);
+      window.addEventListener('play', scanMedia, true);
+    } catch(e) {}
   };
 
   window.__daps_attach_dom = attachDomListeners;

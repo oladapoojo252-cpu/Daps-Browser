@@ -3,6 +3,7 @@ import { WebView } from 'react-native-webview';
 import { StyleSheet, View, Linking } from 'react-native';
 import { adblockManager, RequestType } from '../utils/adblockEngine';
 import { startDownload, saveBase64Download, DownloadItem } from '../utils/downloadManager';
+import { SniffedMediaItem } from './SnifferModal';
 
 interface BrowserViewProps {
   url: string;
@@ -17,6 +18,7 @@ interface BrowserViewProps {
   onShieldBlocked?: (blockedUrl: string, filterType: string) => void;
   onOpenNewTab?: (url: string) => void;
   onScrollDirection?: (direction: 'up' | 'down') => void;
+  onMediaDetected?: (items: SniffedMediaItem[]) => void;
 }
 
 export const BrowserView = forwardRef<any, BrowserViewProps>(
@@ -34,6 +36,7 @@ export const BrowserView = forwardRef<any, BrowserViewProps>(
       onShieldBlocked,
       onOpenNewTab,
       onScrollDirection,
+      onMediaDetected,
     },
     ref
   ) => {
@@ -328,6 +331,8 @@ export const BrowserView = forwardRef<any, BrowserViewProps>(
           }
         } else if (data.type === 'scroll_direction' && data.direction) {
           onScrollDirection?.(data.direction);
+        } else if (data.type === 'media_detected' && Array.isArray(data.items)) {
+          onMediaDetected?.(data.items);
         } else if (data.type === 'start_blob_download' && data.dataUri) {
           saveBase64Download(data.dataUri, data.filename, item => {
             onDownloadComplete?.(item);
@@ -345,6 +350,7 @@ export const BrowserView = forwardRef<any, BrowserViewProps>(
         <WebView
           ref={webViewRef}
           source={{ uri: url }}
+          incognito={isPrivate}
           userAgent={
             userAgent ||
             'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36'
@@ -377,10 +383,10 @@ export const BrowserView = forwardRef<any, BrowserViewProps>(
           }}
           onScroll={handleNativeScroll}
           javaScriptEnabled={true}
-          domStorageEnabled={true}
+          domStorageEnabled={!isPrivate}
           originWhitelist={['*']}
           mixedContentMode="always"
-          thirdPartyCookiesEnabled={true}
+          thirdPartyCookiesEnabled={!isPrivate}
           allowsInlineMediaPlayback={true}
           mediaPlaybackRequiresUserAction={false}
           allowsFullscreenVideo={true}

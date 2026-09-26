@@ -34,9 +34,11 @@ import {
   getSavedDownloads,
   addDownloadListener,
   openOrShareFile,
+  startDownload,
 } from './utils/downloadManager';
 import { adblockManager } from './utils/adblockEngine';
 import { DapsShieldMode } from './utils/dapsShield';
+import { SnifferModal, SniffedMediaItem } from './components/SnifferModal';
 import {
   X,
   Plus,
@@ -47,6 +49,8 @@ import {
   Lock,
   Compass,
   Layers,
+  Shield,
+  Trash2,
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -62,6 +66,7 @@ interface Tab {
   id: string;
   url: string;
   title: string;
+  isIncognito?: boolean;
 }
 
 const STORAGE_KEYS = {
@@ -88,10 +93,12 @@ function MainBrowserApp() {
   const insets = useSafeAreaInsets();
   const systemColorScheme = useColorScheme();
 
-  const [tabs, setTabs] = useState<Tab[]>([{ id: '1', url: 'home', title: 'Home' }]);
+  const [tabs, setTabs] = useState<Tab[]>([{ id: '1', url: 'home', title: 'Home', isIncognito: false }]);
   const [activeTabId, setActiveTabId] = useState('1');
   const [isTabSwitcherVisible, setIsTabSwitcherVisible] = useState(false);
-  const [isPrivate, setIsPrivate] = useState(false);
+  const [activeTabSegment, setActiveTabSegment] = useState<'regular' | 'incognito'>('regular');
+  const [tabMediaMap, setTabMediaMap] = useState<Record<string, SniffedMediaItem[]>>({});
+  const [isSnifferVisible, setIsSnifferVisible] = useState(false);
 
   // Settings State
   const [settings, setSettings] = useState<BrowserSettings>(DEFAULT_SETTINGS);
@@ -120,42 +127,13 @@ function MainBrowserApp() {
   const [tabToast, setTabToast] = useState<{ title: string; tabId: string } | null>(null);
   const toastAnim = useRef(new Animated.Value(120)).current;
 
-  // Auto-hiding Bottom Dock Animation (Brave / Chrome style scroll-away)
-  const dockTranslateAnim = useRef(new Animated.Value(0)).current;
-  const isDockHidden = useRef(false);
-
-  const handleScrollDirection = (direction: 'up' | 'down') => {
-    if (currentTab.url === 'home') return;
-    if (direction === 'down' && !isDockHidden.current) {
-      isDockHidden.current = true;
-      Animated.timing(dockTranslateAnim, {
-        toValue: 120,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    } else if (direction === 'up' && isDockHidden.current) {
-      isDockHidden.current = false;
-      Animated.timing(dockTranslateAnim, {
-        toValue: 0,
-        duration: 180,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
-
-  const showDock = () => {
-    if (isDockHidden.current) {
-      isDockHidden.current = false;
-      Animated.timing(dockTranslateAnim, {
-        toValue: 0,
-        duration: 180,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
-
   const browserRef = useRef<any>(null);
-  const currentTab = tabs.find(t => t.id === activeTabId) || tabs[0] || { id: '1', url: 'home', title: 'Home' };
+  const currentTab = tabs.find(t => t.id === activeTabId) || tabs[0] || { id: '1', url: 'home', title: 'Home', isIncognito: false };
+  const isPrivate = Boolean(currentTab.isIncognito);
+  const currentTabMedia = tabMediaMap[activeTabId] || [];
+  const regularTabs = tabs.filter(t => !t.isIncognito);
+  const incognitoTabs = tabs.filter(t => Boolean(t.isIncognito));
+  const displayedTabs = activeTabSegment === 'incognito' ? incognitoTabs : regularTabs;
 
   // Calculate Dark Mode according to user's Theme setting
   const isDark =
@@ -287,9 +265,30 @@ function MainBrowserApp() {
     isShieldsModalVisible,
   ]);
 
+  const handleMediaDetected = useCallback((tabId: string, items: SniffedMediaItem[]) => {
+    if (!items || items.length === 0) return;
+    setTabMediaMap(prev => {
+      const existing = prev[tabId] || [];
+      const existingUrls = new Set(existing.map(m => m.url));
+      const newItems = items.filter(i => !existingUrls.has(i.url));
+      if (newItems.length === 0) return prev;
+      return { ...prev, [tabId]: [...existing, ...newItems] };
+    });
+  }, []);
+
+  const handleSnifferDownload = async (url: string, filename?: string) => {
+    try {
+      const item = await startDownload(url, filename, completed => {
+        setDownloads(prev => [completed, ...prev]);
+      });
+      setActiveDownload(item);
+    } catch (e) {
+      console.error('Download error from sniffer', e);
+    }
+  };
+
   const handleSearch = (val: string) => {
     const trimmed = val.trim();
-    showDock();
     if (trimmed.toLowerCase() === 'home' || trimmed === '') {
       handleHome();
       return;
@@ -310,15 +309,13 @@ function MainBrowserApp() {
     setPageBlockedCount(0);
     setIsLoading(true);
     setProgress(0.1);
+    setTabMediaMap(prev => ({ ...prev, [activeTabId]: [] }));
     setTabs(prev => prev.map(t => (t.id === activeTabId ? { ...t, url: targetUrl, title: targetUrl } : t)));
   };
 
   const handleNavChange = (nav: any) => {
     setNavState({ canGoBack: nav.canGoBack, canGoForward: nav.canGoForward });
     setIsLoading(Boolean(nav.loading));
-    if (!nav.loading) {
-      showDock();
-    }
 
     if (nav.url && nav.url !== 'about:blank' && nav.url !== 'home') {
       setTabs(prev =>
@@ -364,13 +361,16 @@ function MainBrowserApp() {
   };
 
   const handleSelectTab = (tabId: string) => {
-    showDock();
     if (tabId === activeTabId) {
       setIsTabSwitcherVisible(false);
       return;
     }
     tabFadeAnim.setValue(0.2);
     setActiveTabId(tabId);
+    const selected = tabs.find(t => t.id === tabId);
+    if (selected) {
+      setActiveTabSegment(selected.isIncognito ? 'incognito' : 'regular');
+    }
     setIsTabSwitcherVisible(false);
     Animated.timing(tabFadeAnim, {
       toValue: 1,
@@ -381,13 +381,13 @@ function MainBrowserApp() {
   };
 
   const handleHome = () => {
-    showDock();
     tabFadeAnim.setValue(0.3);
     setProgress(1);
     setIsLoading(false);
     setPageBlockedCount(0);
     setNavState({ canGoBack: false, canGoForward: false });
-    setTabs(prev => prev.map(t => (t.id === activeTabId ? { ...t, url: 'home', title: 'Home' } : t)));
+    setTabs(prev => prev.map(t => (t.id === activeTabId ? { ...t, url: 'home', title: t.isIncognito ? 'Incognito' : 'Home' } : t)));
+    setTabMediaMap(prev => ({ ...prev, [activeTabId]: [] }));
     Animated.timing(tabFadeAnim, {
       toValue: 1,
       duration: 200,
@@ -397,11 +397,63 @@ function MainBrowserApp() {
 
   const handleCreateNewTab = () => {
     const newId = Date.now().toString();
-    const newTab: Tab = { id: newId, url: 'home', title: 'Home' };
+    const newTab: Tab = { id: newId, url: 'home', title: 'Home', isIncognito: false };
     setTabs(prev => [...prev, newTab]);
+    setActiveTabSegment('regular');
     handleSelectTab(newId);
     setPageBlockedCount(0);
     setIsLoading(false);
+  };
+
+  const handleCreateNewIncognitoTab = (url: string = 'home') => {
+    const newId = Date.now().toString();
+    const newTab: Tab = {
+      id: newId,
+      url,
+      title: url === 'home' ? 'Incognito' : url,
+      isIncognito: true,
+    };
+    setTabs(prev => [...prev, newTab]);
+    setActiveTabSegment('incognito');
+    handleSelectTab(newId);
+    setPageBlockedCount(0);
+    setIsLoading(false);
+  };
+
+  const handleLongPressTabs = () => {
+    Alert.alert('New Tab', 'Select tab type to open:', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Regular Tab',
+        onPress: () => handleCreateNewTab(),
+      },
+      {
+        text: 'New Incognito Tab',
+        style: 'destructive',
+        onPress: () => handleCreateNewIncognitoTab(),
+      },
+    ]);
+  };
+
+  const handleCloseAllIncognitoTabs = () => {
+    const remaining = tabs.filter(t => !t.isIncognito);
+    setTabMediaMap(prev => {
+      const copy = { ...prev };
+      tabs.filter(t => t.isIncognito).forEach(t => delete copy[t.id]);
+      return copy;
+    });
+
+    if (remaining.length === 0) {
+      const fallbackTab: Tab = { id: Date.now().toString(), url: 'home', title: 'Home', isIncognito: false };
+      setTabs([fallbackTab]);
+      setActiveTabId(fallbackTab.id);
+    } else {
+      setTabs(remaining);
+      if (currentTab.isIncognito) {
+        setActiveTabId(remaining[remaining.length - 1].id);
+      }
+    }
+    setActiveTabSegment('regular');
   };
 
   const handleOpenNewTab = (newUrl: string) => {
@@ -411,23 +463,48 @@ function MainBrowserApp() {
     try {
       displayDomain = new URL(newUrl).hostname.replace(/^www\./, '');
     } catch {}
-    const newTab: Tab = { id: newId, url: newUrl, title: displayDomain };
+    const newTab: Tab = {
+      id: newId,
+      url: newUrl,
+      title: displayDomain,
+      isIncognito: currentTab.isIncognito,
+    };
     setTabs(prev => [...prev, newTab]);
     showTabToast(displayDomain, newId);
   };
 
   const handleCloseTab = (tabId: string) => {
+    const targetTab = tabs.find(t => t.id === tabId);
+    const isTargetIncognito = Boolean(targetTab?.isIncognito);
+
+    setTabMediaMap(prev => {
+      const copy = { ...prev };
+      delete copy[tabId];
+      return copy;
+    });
+
     if (tabs.length === 1) {
-      setTabs([{ id: '1', url: 'home', title: 'Home' }]);
-      setActiveTabId('1');
+      const newTab: Tab = { id: Date.now().toString(), url: 'home', title: 'Home', isIncognito: false };
+      setTabs([newTab]);
+      setActiveTabId(newTab.id);
+      setActiveTabSegment('regular');
       setPageBlockedCount(0);
       setIsLoading(false);
       return;
     }
+
     const filtered = tabs.filter(t => t.id !== tabId);
     setTabs(filtered);
+
     if (activeTabId === tabId) {
-      setActiveTabId(filtered[filtered.length - 1].id);
+      const sameSegment = filtered.filter(t => Boolean(t.isIncognito) === isTargetIncognito);
+      if (sameSegment.length > 0) {
+        setActiveTabId(sameSegment[sameSegment.length - 1].id);
+      } else {
+        const fallback = filtered[filtered.length - 1];
+        setActiveTabId(fallback.id);
+        setActiveTabSegment(fallback.isIncognito ? 'incognito' : 'regular');
+      }
     }
   };
 
@@ -577,7 +654,7 @@ function MainBrowserApp() {
             style={[
               styles.newTabToast,
               {
-                bottom: dockBottomMargin + 72,
+                bottom: 14,
                 transform: [{ translateY: toastAnim }],
                 backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
                 borderColor: isDark ? '#3A3A3C' : '#E5E5EA',
@@ -617,7 +694,7 @@ function MainBrowserApp() {
           </Animated.View>
         )}
 
-        {/* Main Content Area - Full Bleed: Web content scrolls under floating dock */}
+        {/* Main Content Area: fills all space between address bar and bottom dock */}
         <Animated.View style={[styles.content, { opacity: tabFadeAnim }]}>
           {currentTab.url === 'home' ? (
             <DapsHome
@@ -651,7 +728,7 @@ function MainBrowserApp() {
               }
               onShieldBlocked={handleShieldBlocked}
               onOpenNewTab={handleOpenNewTab}
-              onScrollDirection={handleScrollDirection}
+              onMediaDetected={items => handleMediaDetected(currentTab.id, items)}
               onDownloadComplete={file => {
                 setDownloads(prev => [file, ...prev]);
               }}
@@ -659,14 +736,14 @@ function MainBrowserApp() {
           )}
         </Animated.View>
 
-        {/* Truly Floating Bottom Dock with Scroll Auto-Hide */}
-        <Animated.View
-          pointerEvents="box-none"
+        {/* Bottom Navigation Section: Sits cleanly in layout flow ABOVE the Android navigation bar, never overlapping webview content */}
+        <View
           style={[
-            styles.dockWrapper,
+            styles.bottomDockContainer,
             {
-              bottom: dockBottomMargin,
-              transform: [{ translateY: dockTranslateAnim }],
+              paddingBottom: Math.max(insets.bottom, 8),
+              backgroundColor: theme.bg,
+              borderTopColor: isDark ? '#1C1C1E' : '#E5E5EA',
             },
           ]}
         >
@@ -677,16 +754,27 @@ function MainBrowserApp() {
             onForward={() => browserRef.current?.goForward()}
             onHome={handleHome}
             onTabs={() => {
-              showDock();
+              setActiveTabSegment(isPrivate ? 'incognito' : 'regular');
               setIsTabSwitcherVisible(true);
             }}
+            onLongPressTabs={handleLongPressTabs}
+            onOpenSniffer={() => setIsSnifferVisible(true)}
+            sniffedMediaCount={currentTabMedia.length}
             isPrivate={isPrivate}
             isDarkMode={isDark}
             tabCount={tabs.length}
-            onTogglePrivate={() => setIsPrivate(!isPrivate)}
           />
-        </Animated.View>
+        </View>
       </View>
+
+      {/* Smart Download / Media Sniffer Modal */}
+      <SnifferModal
+        visible={isSnifferVisible}
+        onClose={() => setIsSnifferVisible(false)}
+        mediaItems={currentTabMedia}
+        onDownload={handleSnifferDownload}
+        isDarkMode={isDark}
+      />
 
       {/* Settings Modal (with Black & White theme selector) */}
       <SettingsView
@@ -752,14 +840,43 @@ function MainBrowserApp() {
             },
           ]}
         >
+          {/* Header */}
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>
-              Tabs ({tabs.length})
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Tabs</Text>
+              <View
+                style={[
+                  styles.headerTabCountBadge,
+                  { backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA' },
+                ]}
+              >
+                <Text style={[styles.headerTabCountText, { color: theme.text }]}>
+                  {tabs.length}
+                </Text>
+              </View>
+            </View>
+
             <View style={styles.tabActions}>
+              {activeTabSegment === 'incognito' && incognitoTabs.length > 0 && (
+                <TouchableOpacity
+                  style={[styles.closeAllIncognitoBtn, { backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA' }]}
+                  onPress={handleCloseAllIncognitoTabs}
+                >
+                  <Trash2 size={15} color={isDark ? '#FF453A' : '#D70015'} />
+                  <Text style={[styles.closeAllIncognitoText, { color: isDark ? '#FF453A' : '#D70015' }]}>
+                    Close All
+                  </Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={[styles.newTabBtn, { backgroundColor: isDark ? '#FFFFFF' : '#000000' }]}
-                onPress={handleCreateNewTab}
+                onPress={() => {
+                  if (activeTabSegment === 'incognito') {
+                    handleCreateNewIncognitoTab();
+                  } else {
+                    handleCreateNewTab();
+                  }
+                }}
               >
                 <Plus size={18} color={isDark ? '#000000' : '#FFFFFF'} />
               </TouchableOpacity>
@@ -769,98 +886,188 @@ function MainBrowserApp() {
             </View>
           </View>
 
-          <ScrollView contentContainerStyle={styles.tabGrid} showsVerticalScrollIndicator={false}>
-            {tabs.map(tab => {
-              const isTabActive = activeTabId === tab.id;
-              const isHomeTab = tab.url === 'home';
-              let displayDomain = 'Home';
-              try {
-                if (!isHomeTab) displayDomain = new URL(tab.url).hostname.replace(/^www\./, '');
-              } catch {}
+          {/* Segment Selector: Regular Tabs vs Incognito Tabs */}
+          <View style={[styles.tabSegmentBar, { backgroundColor: isDark ? '#1C1C1E' : '#E5E5EA' }]}>
+            <TouchableOpacity
+              style={[
+                styles.tabSegmentBtn,
+                activeTabSegment === 'regular' && [
+                  styles.tabSegmentBtnActive,
+                  { backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF' },
+                ],
+              ]}
+              onPress={() => setActiveTabSegment('regular')}
+            >
+              <Layers
+                size={15}
+                color={activeTabSegment === 'regular' ? (isDark ? '#FFFFFF' : '#000000') : theme.subtext}
+              />
+              <Text
+                style={[
+                  styles.tabSegmentText,
+                  {
+                    color: activeTabSegment === 'regular' ? (isDark ? '#FFFFFF' : '#000000') : theme.subtext,
+                    fontWeight: activeTabSegment === 'regular' ? '700' : '500',
+                  },
+                ]}
+              >
+                Regular ({regularTabs.length})
+              </Text>
+            </TouchableOpacity>
 
-              return (
-                <TouchableOpacity
-                  key={tab.id}
-                  style={[
-                    styles.tabCard,
-                    {
-                      backgroundColor: theme.card,
-                      borderColor: isTabActive ? (isDark ? '#FFFFFF' : '#000000') : theme.cardBorder,
-                      borderWidth: isTabActive ? 2 : 1,
-                    },
-                  ]}
-                  onPress={() => handleSelectTab(tab.id)}
-                >
-                  {/* Tab Card Header */}
-                  <View style={styles.tabCardHeader}>
-                    <Text numberOfLines={1} style={[styles.tabCardTitle, { color: theme.text }]}>
-                      {tab.title || displayDomain}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => handleCloseTab(tab.id)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      style={styles.closeTabBtn}
-                    >
-                      <X size={14} color={theme.subtext} />
-                    </TouchableOpacity>
-                  </View>
+            <TouchableOpacity
+              style={[
+                styles.tabSegmentBtn,
+                activeTabSegment === 'incognito' && [
+                  styles.tabSegmentBtnActive,
+                  { backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF' },
+                ],
+              ]}
+              onPress={() => setActiveTabSegment('incognito')}
+            >
+              <Shield
+                size={15}
+                color={activeTabSegment === 'incognito' ? (isDark ? '#FFFFFF' : '#000000') : theme.subtext}
+              />
+              <Text
+                style={[
+                  styles.tabSegmentText,
+                  {
+                    color: activeTabSegment === 'incognito' ? (isDark ? '#FFFFFF' : '#000000') : theme.subtext,
+                    fontWeight: activeTabSegment === 'incognito' ? '700' : '500',
+                  },
+                ]}
+              >
+                Incognito ({incognitoTabs.length})
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-                  {/* Rich Scaled Pro Website Snapshot */}
-                  <View style={[styles.tabWebsiteView, { backgroundColor: isDark ? '#0D0D0D' : '#F6F6F9' }]}>
-                    {isHomeTab ? (
-                      <View style={styles.homeTabPreview}>
-                        <Compass size={24} color={theme.text} />
-                        <Text style={[styles.homeTabTitle, { color: theme.text }]}>Daps Home</Text>
-                        <Text style={[styles.homeTabSub, { color: theme.subtext }]}>Start page</Text>
-                      </View>
-                    ) : (
-                      <View style={styles.webpagePreview}>
-                        {/* Mini Address Bar Preview */}
-                        <View style={[styles.miniAddressPill, { backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF' }]}>
-                          <Lock size={10} color={theme.subtext} style={{ marginRight: 4 }} />
-                          <Text numberOfLines={1} style={[styles.miniAddressText, { color: theme.text }]}>
-                            {displayDomain}
-                          </Text>
+          {/* Tabs Grid or Empty Incognito State */}
+          {displayedTabs.length === 0 && activeTabSegment === 'incognito' ? (
+            <View style={styles.incognitoEmptyState}>
+              <View style={[styles.incognitoIconRing, { backgroundColor: isDark ? '#1C1C1E' : '#E5E5EA' }]}>
+                <Shield size={38} color={isDark ? '#FFFFFF' : '#000000'} />
+              </View>
+              <Text style={[styles.incognitoEmptyTitle, { color: theme.text }]}>
+                No Incognito Tabs
+              </Text>
+              <Text style={[styles.incognitoEmptySub, { color: theme.subtext }]}>
+                Incognito tabs keep your browsing completely private. History, search queries, and cookies are never saved.
+              </Text>
+              <TouchableOpacity
+                style={[styles.incognitoCreateBtn, { backgroundColor: isDark ? '#FFFFFF' : '#000000' }]}
+                onPress={() => handleCreateNewIncognitoTab()}
+              >
+                <Plus size={16} color={isDark ? '#000000' : '#FFFFFF'} style={{ marginRight: 6 }} />
+                <Text style={[styles.incognitoCreateBtnText, { color: isDark ? '#000000' : '#FFFFFF' }]}>
+                  New Incognito Tab
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <ScrollView contentContainerStyle={styles.tabGrid} showsVerticalScrollIndicator={false}>
+              {displayedTabs.map(tab => {
+                const isTabActive = activeTabId === tab.id;
+                const isHomeTab = tab.url === 'home';
+                let displayDomain = 'Home';
+                try {
+                  if (!isHomeTab) displayDomain = new URL(tab.url).hostname.replace(/^www\./, '');
+                } catch {}
+
+                return (
+                  <TouchableOpacity
+                    key={tab.id}
+                    style={[
+                      styles.tabCard,
+                      {
+                        backgroundColor: theme.card,
+                        borderColor: isTabActive ? (isDark ? '#FFFFFF' : '#000000') : theme.cardBorder,
+                        borderWidth: isTabActive ? 2 : 1,
+                      },
+                    ]}
+                    onPress={() => handleSelectTab(tab.id)}
+                  >
+                    {/* Tab Card Header */}
+                    <View style={styles.tabCardHeader}>
+                      {tab.isIncognito && (
+                        <View style={[styles.incognitoTabBadge, { backgroundColor: isDark ? '#3A3A3C' : '#000000' }]}>
+                          <Lock size={9} color="#FFFFFF" style={{ marginRight: 3 }} />
+                          <Text style={styles.incognitoTabBadgeText}>Private</Text>
                         </View>
+                      )}
+                      <Text numberOfLines={1} style={[styles.tabCardTitle, { color: theme.text }]}>
+                        {tab.title || displayDomain}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => handleCloseTab(tab.id)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        style={styles.closeTabBtn}
+                      >
+                        <X size={14} color={theme.subtext} />
+                      </TouchableOpacity>
+                    </View>
 
-                        {/* Real Live Scaled Website View */}
-                        <View style={styles.realWebsiteWrapper} pointerEvents="none">
-                          <View
-                            style={{
-                              width: VIEWPORT_WIDTH,
-                              height: VIEWPORT_HEIGHT,
-                              transform: [
-                                { translateX: TRANSLATE_X },
-                                { translateY: TRANSLATE_Y },
-                                { scale: SCALE_RATIO },
-                              ],
-                            }}
-                          >
-                            <WebView
-                              source={{ uri: tab.url }}
+                    {/* Rich Scaled Pro Website Snapshot */}
+                    <View style={[styles.tabWebsiteView, { backgroundColor: isDark ? '#0D0D0D' : '#F6F6F9' }]}>
+                      {isHomeTab ? (
+                        <View style={styles.homeTabPreview}>
+                          <Compass size={24} color={theme.text} />
+                          <Text style={[styles.homeTabTitle, { color: theme.text }]}>
+                            {tab.isIncognito ? 'Incognito Home' : 'Daps Home'}
+                          </Text>
+                          <Text style={[styles.homeTabSub, { color: theme.subtext }]}>Start page</Text>
+                        </View>
+                      ) : (
+                        <View style={styles.webpagePreview}>
+                          {/* Mini Address Bar Preview */}
+                          <View style={[styles.miniAddressPill, { backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF' }]}>
+                            <Lock size={10} color={theme.subtext} style={{ marginRight: 4 }} />
+                            <Text numberOfLines={1} style={[styles.miniAddressText, { color: theme.text }]}>
+                              {displayDomain}
+                            </Text>
+                          </View>
+
+                          {/* Real Live Scaled Website View */}
+                          <View style={styles.realWebsiteWrapper} pointerEvents="none">
+                            <View
                               style={{
                                 width: VIEWPORT_WIDTH,
                                 height: VIEWPORT_HEIGHT,
-                                backgroundColor: isDark ? '#000000' : '#FFFFFF',
+                                transform: [
+                                  { translateX: TRANSLATE_X },
+                                  { translateY: TRANSLATE_Y },
+                                  { scale: SCALE_RATIO },
+                                ],
                               }}
-                              scrollEnabled={false}
-                              javaScriptEnabled={true}
-                              domStorageEnabled={true}
-                              cacheEnabled={true}
-                              forceDarkOn={isDark}
-                              allowsInlineMediaPlayback={false}
-                              mediaPlaybackRequiresUserAction={true}
-                              setSupportMultipleWindows={false}
-                            />
+                            >
+                              <WebView
+                                source={{ uri: tab.url }}
+                                style={{
+                                  width: VIEWPORT_WIDTH,
+                                  height: VIEWPORT_HEIGHT,
+                                  backgroundColor: isDark ? '#000000' : '#FFFFFF',
+                                }}
+                                scrollEnabled={false}
+                                javaScriptEnabled={true}
+                                domStorageEnabled={!tab.isIncognito}
+                                cacheEnabled={!tab.isIncognito}
+                                incognito={Boolean(tab.isIncognito)}
+                                forceDarkOn={isDark}
+                                allowsInlineMediaPlayback={false}
+                                mediaPlaybackRequiresUserAction={true}
+                                setSupportMultipleWindows={false}
+                              />
+                            </View>
                           </View>
                         </View>
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
         </SafeAreaView>
       </Modal>
 
@@ -1086,5 +1293,109 @@ const styles = StyleSheet.create({
   },
   newTabToastClose: {
     padding: 6,
+  },
+  bottomDockContainer: {
+    width: '100%',
+    paddingTop: 6,
+    alignItems: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  tabSegmentBar: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 14,
+    padding: 3,
+  },
+  tabSegmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 11,
+    gap: 6,
+  },
+  tabSegmentBtnActive: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  tabSegmentText: {
+    fontSize: 13,
+  },
+  headerTabCountBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 8,
+  },
+  headerTabCountText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  closeAllIncognitoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  closeAllIncognitoText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  incognitoEmptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+  },
+  incognitoIconRing: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  incognitoEmptyTitle: {
+    fontSize: 19,
+    fontWeight: '800',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  incognitoEmptySub: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  incognitoCreateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  incognitoCreateBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  incognitoTabBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  incognitoTabBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
   },
 });

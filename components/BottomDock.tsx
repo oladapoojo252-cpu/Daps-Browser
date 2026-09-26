@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { ChevronLeft, ChevronRight, Home, Layers, Shield } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Home, ArrowDownToLine } from 'lucide-react-native';
 
 export const BottomDock = ({
   canGoBack,
@@ -9,8 +9,10 @@ export const BottomDock = ({
   onForward,
   onHome,
   onTabs,
+  onLongPressTabs,
+  onOpenSniffer,
+  sniffedMediaCount = 0,
   isPrivate,
-  onTogglePrivate,
   isDarkMode = false,
   tabCount = 1,
 }: any) => {
@@ -40,8 +42,14 @@ export const BottomDock = ({
           <Home color={dark ? '#000000' : '#FFFFFF'} size={18} fill={dark ? '#000000' : '#FFFFFF'} />
         </TouchableOpacity>
 
-        {/* Tabs with Count Indicator (Chrome / Brave style) */}
-        <TouchableOpacity onPress={onTabs} style={styles.iconButton}>
+        {/* Tabs with Count Indicator & Long Press for Quick Incognito (Chrome / Brave style) */}
+        <TouchableOpacity
+          onPress={onTabs}
+          onLongPress={onLongPressTabs}
+          delayLongPress={280}
+          activeOpacity={0.7}
+          style={styles.iconButton}
+        >
           <View style={[styles.tabBadge, { borderColor: dark ? '#FFFFFF' : '#000000' }]}>
             <Text style={[styles.tabBadgeText, { color: dark ? '#FFFFFF' : '#000000' }]}>
               {tabCount || 1}
@@ -49,13 +57,38 @@ export const BottomDock = ({
           </View>
         </TouchableOpacity>
 
-        {/* Private Mode */}
-        <TouchableOpacity onPress={onTogglePrivate} style={styles.iconButton}>
-          <Shield
-            size={20}
-            color={dark ? '#FFFFFF' : '#000000'}
-            fill={isPrivate ? (dark ? '#FFFFFF' : '#000000') : 'none'}
-          />
+        {/* Smart Download / Media Sniffer Button */}
+        <TouchableOpacity
+          onPress={onOpenSniffer}
+          style={styles.iconButton}
+          activeOpacity={0.7}
+        >
+          <View style={styles.snifferBtnWrapper}>
+            <ArrowDownToLine
+              size={21}
+              color={dark ? '#FFFFFF' : '#000000'}
+            />
+            {sniffedMediaCount > 0 && (
+              <View
+                style={[
+                  styles.snifferBadge,
+                  {
+                    backgroundColor: dark ? '#FFFFFF' : '#000000',
+                    borderColor: dark ? '#1A1A1A' : '#FFFFFF',
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.snifferBadgeText,
+                    { color: dark ? '#000000' : '#FFFFFF' },
+                  ]}
+                >
+                  {sniffedMediaCount > 9 ? '9+' : sniffedMediaCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
     </View>
@@ -111,5 +144,26 @@ const styles = StyleSheet.create({
   tabBadgeText: {
     fontSize: 11,
     fontWeight: '800',
+  },
+  snifferBtnWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  snifferBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -8,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  snifferBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
   },
 });
