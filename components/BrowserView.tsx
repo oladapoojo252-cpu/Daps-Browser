@@ -4,6 +4,7 @@ import { StyleSheet, View, Linking } from 'react-native';
 import { adblockManager, RequestType } from '../utils/adblockEngine';
 import { startDownload, saveBase64Download, DownloadItem } from '../utils/downloadManager';
 import { SniffedMediaItem } from './SnifferModal';
+import { AestheticErrorView } from './AestheticErrorView';
 
 interface BrowserViewProps {
   url: string;
@@ -19,6 +20,7 @@ interface BrowserViewProps {
   onOpenNewTab?: (url: string) => void;
   onScrollDirection?: (direction: 'up' | 'down') => void;
   onMediaDetected?: (items: SniffedMediaItem[]) => void;
+  onGoHome?: () => void;
 }
 
 export const BrowserView = forwardRef<any, BrowserViewProps>(
@@ -37,6 +39,7 @@ export const BrowserView = forwardRef<any, BrowserViewProps>(
       onOpenNewTab,
       onScrollDirection,
       onMediaDetected,
+      onGoHome,
     },
     ref
   ) => {
@@ -398,6 +401,18 @@ export const BrowserView = forwardRef<any, BrowserViewProps>(
           onFileDownload={({ nativeEvent: { downloadUrl } }) => {
             triggerDownload(downloadUrl);
           }}
+          renderError={(errorDomain, errorCode, errorDescription) => (
+            <AestheticErrorView
+              url={url}
+              errorDomain={errorDomain}
+              errorCode={errorCode}
+              errorDescription={errorDescription}
+              isDarkMode={isDarkMode}
+              isPrivate={isPrivate}
+              onReload={() => webViewRef.current?.reload()}
+              onHome={onGoHome}
+            />
+          )}
           style={[styles.webview, { backgroundColor: isDarkMode ? '#000000' : '#FFFFFF' }]}
         />
       </View>

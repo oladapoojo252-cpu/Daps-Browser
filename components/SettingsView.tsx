@@ -27,9 +27,6 @@ import {
   ChevronRight,
   Check,
   RefreshCw,
-  ShieldCheck,
-  Zap,
-  Code,
 } from 'lucide-react-native';
 import { DapsShieldMode } from '../utils/dapsShield';
 import { DownloadItem } from '../utils/downloadManager';
@@ -628,7 +625,7 @@ export const SettingsView = ({
 
             <View
               style={[
-                styles.aboutSheet,
+                styles.minimalCreditSheet,
                 {
                   backgroundColor: theme.card,
                   borderColor: theme.border,
@@ -636,96 +633,61 @@ export const SettingsView = ({
               ]}
             >
               <ScrollView
-                showsVerticalScrollIndicator={true}
+                showsVerticalScrollIndicator={false}
                 nestedScrollEnabled={true}
                 keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.aboutScroll}
+                contentContainerStyle={styles.minimalCreditContent}
               >
                 {/* Brand Emblem */}
-                <View style={styles.aboutEmblemSection}>
-                  <View style={[styles.aboutLogoRing, { backgroundColor: dark ? '#222226' : '#E8E8EE', borderColor: theme.border }]}>
-                    <Shield size={36} color={dark ? '#FFFFFF' : '#000000'} fill={dark ? '#FFFFFF' : '#000000'} />
+                <View style={styles.minimalHeader}>
+                  <View style={[styles.minimalLogoRing, { backgroundColor: dark ? '#1E1E22' : '#F0F0F4' }]}>
+                    <Shield size={26} color={dark ? '#FFFFFF' : '#111111'} fill={dark ? '#FFFFFF' : '#111111'} />
                   </View>
-                  <Text style={[styles.aboutAppName, { color: theme.text }]}>DAPS BROWSER</Text>
-                  <Text style={[styles.aboutVersionBadge, { color: theme.subtext }]}>
-                    Version 2.1.0 • Stable Release
+                  <Text style={[styles.minimalAppName, { color: theme.text }]}>Daps Browser</Text>
+                  <Text style={[styles.minimalVersionText, { color: theme.subtext }]}>
+                    Version 2.1.0 • Stable
                   </Text>
                 </View>
 
-                {/* Mission */}
-                <View style={[styles.aboutSectionBox, { backgroundColor: dark ? '#111113' : '#FFFFFF', borderColor: theme.border }]}>
-                  <Text style={[styles.aboutSectionTitle, { color: theme.text }]}>Mission</Text>
-                  <Text style={[styles.aboutDescription, { color: theme.subtext }]}>
-                    Engineered to deliver an uncompromising, high-speed, and private web experience. Daps Browser automatically neutralizes invasive ads, trackers, cookie prompts, and surveillance telemetry while equipping you with on-device media sniffing and encrypted incognito browsing.
-                  </Text>
-                </View>
+                {/* Hairline Divider */}
+                <View style={[styles.minimalDivider, { backgroundColor: theme.border }]} />
 
-                {/* Core Architecture */}
-                <View style={[styles.aboutSectionBox, { backgroundColor: dark ? '#111113' : '#FFFFFF', borderColor: theme.border }]}>
-                  <Text style={[styles.aboutSectionTitle, { color: theme.text }]}>Core Architecture</Text>
-
-                  <View style={styles.creditRow}>
-                    <View style={[styles.creditIconWrap, { backgroundColor: dark ? '#222224' : '#F2F2F7' }]}>
-                      <ShieldCheck size={16} color={theme.text} />
-                    </View>
-                    <View style={styles.creditMeta}>
-                      <Text style={[styles.creditLabel, { color: theme.text }]}>Protection Engine</Text>
-                      <Text style={[styles.creditValue, { color: theme.subtext }]}>Daps Shield Engine with Cosmetic Element Filtering</Text>
-                    </View>
+                {/* Minimalist Info Rows */}
+                <View style={styles.minimalInfoContainer}>
+                  <View style={styles.minimalRow}>
+                    <Text style={[styles.minimalLabel, { color: theme.subtext }]}>Creator</Text>
+                    <Text style={[styles.minimalValue, { color: theme.text }]}>Dapo Ojo</Text>
                   </View>
-
-                  <View style={styles.creditRow}>
-                    <View style={[styles.creditIconWrap, { backgroundColor: dark ? '#222224' : '#F2F2F7' }]}>
-                      <Zap size={16} color={theme.text} />
-                    </View>
-                    <View style={styles.creditMeta}>
-                      <Text style={[styles.creditLabel, { color: theme.text }]}>Filter Rulesets</Text>
-                      <Text style={[styles.creditValue, { color: theme.subtext }]}>Bundled EasyList, EasyPrivacy, AdGuard & Custom Anti-Ad Lists</Text>
-                    </View>
+                  <View style={styles.minimalRow}>
+                    <Text style={[styles.minimalLabel, { color: theme.subtext }]}>Organization</Text>
+                    <Text style={[styles.minimalValue, { color: theme.text }]}>Daps Technologies</Text>
                   </View>
-
-                  <View style={styles.creditRow}>
-                    <View style={[styles.creditIconWrap, { backgroundColor: dark ? '#222224' : '#F2F2F7' }]}>
-                      <Download size={16} color={theme.text} />
-                    </View>
-                    <View style={styles.creditMeta}>
-                      <Text style={[styles.creditLabel, { color: theme.text }]}>Media Detection Pipeline</Text>
-                      <Text style={[styles.creditValue, { color: theme.subtext }]}>Real-time XHR, Fetch & Subframe Stream Sniffer</Text>
-                    </View>
+                  <View style={styles.minimalRow}>
+                    <Text style={[styles.minimalLabel, { color: theme.subtext }]}>Core Shield</Text>
+                    <Text style={[styles.minimalValue, { color: theme.text }]}>v2.1 Fast Engine</Text>
+                  </View>
+                  <View style={styles.minimalRow}>
+                    <Text style={[styles.minimalLabel, { color: theme.subtext }]}>Platform</Text>
+                    <Text style={[styles.minimalValue, { color: theme.text }]}>Android Native</Text>
                   </View>
                 </View>
 
-                {/* Engineering & Credits */}
-                <View style={[styles.aboutSectionBox, { backgroundColor: dark ? '#111113' : '#FFFFFF', borderColor: theme.border }]}>
-                  <Text style={[styles.aboutSectionTitle, { color: theme.text }]}>Leadership & Engineering</Text>
+                {/* Hairline Divider */}
+                <View style={[styles.minimalDivider, { backgroundColor: theme.border }]} />
 
-                  <View style={styles.creditRow}>
-                    <View style={[styles.creditIconWrap, { backgroundColor: dark ? '#222224' : '#F2F2F7' }]}>
-                      <Code size={16} color={theme.text} />
-                    </View>
-                    <View style={styles.creditMeta}>
-                      <Text style={[styles.creditLabel, { color: theme.text }]}>Lead Architect & Engineer</Text>
-                      <Text style={[styles.creditValue, { color: theme.text, fontWeight: '700' }]}>Dapo Ojo</Text>
-                      <Text style={[styles.creditValue, { color: theme.subtext }]}>Founder, Daps Technologies</Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Copyright & Seal */}
-                <View style={styles.aboutFooter}>
-                  <Text style={[styles.copyrightText, { color: theme.subtext }]}>
+                {/* Minimalist Footer Copyright */}
+                <View style={styles.minimalFooter}>
+                  <Text style={[styles.minimalCopyright, { color: theme.subtext }]}>
                     © 2026 Daps Technologies. All rights reserved.
-                  </Text>
-                  <Text style={[styles.mottoText, { color: theme.subtext }]}>
-                    Private. Fast. Uncompromised.
                   </Text>
                 </View>
 
                 <TouchableOpacity
-                  style={[styles.confirmBtn, { backgroundColor: theme.accent, marginTop: 18, marginBottom: 8 }]}
+                  style={[styles.minimalDoneBtn, { backgroundColor: theme.accent }]}
                   onPress={() => setActiveSubModal('none')}
+                  activeOpacity={0.8}
                 >
-                  <Text style={[styles.confirmBtnText, { color: theme.accentText }]}>
+                  <Text style={[styles.minimalDoneBtnText, { color: theme.accentText }]}>
                     Done
                   </Text>
                 </TouchableOpacity>
@@ -881,93 +843,80 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  aboutSheet: {
+  minimalCreditSheet: {
     width: '100%',
-    maxWidth: 420,
-    maxHeight: '85%',
+    maxWidth: 380,
+    maxHeight: '80%',
     borderRadius: 24,
     borderWidth: 1,
     overflow: 'hidden',
   },
-  aboutScroll: {
-    padding: 22,
-    gap: 14,
-  },
-  aboutEmblemSection: {
+  minimalCreditContent: {
+    padding: 24,
     alignItems: 'center',
-    paddingVertical: 8,
   },
-  aboutLogoRing: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    justifyContent: 'center',
+  minimalHeader: {
     alignItems: 'center',
-    borderWidth: 1.5,
     marginBottom: 12,
   },
-  aboutAppName: {
-    fontSize: 20,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-  },
-  aboutVersionBadge: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 3,
-  },
-  aboutSectionBox: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 14,
-    gap: 10,
-  },
-  aboutSectionTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  aboutDescription: {
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  creditRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  creditIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  minimalLogoRing: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 2,
+    marginBottom: 10,
   },
-  creditMeta: {
-    flex: 1,
+  minimalAppName: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
-  creditLabel: {
+  minimalVersionText: {
     fontSize: 12,
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  minimalDivider: {
+    width: '100%',
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 14,
+  },
+  minimalInfoContainer: {
+    width: '100%',
+    gap: 12,
+    paddingHorizontal: 4,
+  },
+  minimalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  minimalLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  minimalValue: {
+    fontSize: 13,
     fontWeight: '700',
   },
-  creditValue: {
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 1,
-  },
-  aboutFooter: {
+  minimalFooter: {
     alignItems: 'center',
-    paddingTop: 8,
-    gap: 4,
+    marginBottom: 18,
   },
-  copyrightText: {
+  minimalCopyright: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '500',
   },
-  mottoText: {
-    fontSize: 11,
-    fontStyle: 'italic',
+  minimalDoneBtn: {
+    width: '100%',
+    paddingVertical: 12,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  minimalDoneBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

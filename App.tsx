@@ -770,6 +770,7 @@ function MainBrowserApp() {
               onDownloadComplete={file => {
                 setDownloads(prev => [file, ...prev]);
               }}
+              onGoHome={handleHome}
             />
           )}
         </Animated.View>
