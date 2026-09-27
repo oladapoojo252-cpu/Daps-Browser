@@ -656,7 +656,7 @@ export const SettingsView = ({
                 <View style={styles.minimalInfoContainer}>
                   <View style={styles.minimalRow}>
                     <Text style={[styles.minimalLabel, { color: theme.subtext }]}>Creator</Text>
-                    <Text style={[styles.minimalValue, { color: theme.text }]}>Dapo Ojo</Text>
+                    <Text style={[styles.minimalValue, { color: theme.text }]}>Oladapo Ojo</Text>
                   </View>
                   <View style={styles.minimalRow}>
                     <Text style={[styles.minimalLabel, { color: theme.subtext }]}>Organization</Text>
@@ -665,10 +665,6 @@ export const SettingsView = ({
                   <View style={styles.minimalRow}>
                     <Text style={[styles.minimalLabel, { color: theme.subtext }]}>Core Shield</Text>
                     <Text style={[styles.minimalValue, { color: theme.text }]}>v2.1 Fast Engine</Text>
-                  </View>
-                  <View style={styles.minimalRow}>
-                    <Text style={[styles.minimalLabel, { color: theme.subtext }]}>Platform</Text>
-                    <Text style={[styles.minimalValue, { color: theme.text }]}>Android Native</Text>
                   </View>
                 </View>
 
