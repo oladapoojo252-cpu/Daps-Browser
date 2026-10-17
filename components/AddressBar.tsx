@@ -142,7 +142,6 @@ export const AddressBar = ({
 
   const dark = isDarkMode || isPrivate;
   const theme = {
-    wrapperBg: dark ? '#000000' : '#FFFFFF',
     pillBg: dark ? '#1A1A1A' : '#F0F0F2',
     pillBorder: dark ? '#2A2A2A' : '#E5E7EB',
     dropdownBg: dark ? '#1A1A1C' : '#FFFFFF',
@@ -156,7 +155,7 @@ export const AddressBar = ({
   const isSecure = url.startsWith('https://');
 
   return (
-    <View style={[styles.wrapper, { backgroundColor: theme.wrapperBg }]}>
+    <View style={styles.wrapper}>
       <View
         style={[
           styles.pill,
@@ -211,6 +210,7 @@ export const AddressBar = ({
           autoCorrect={false}
           selectTextOnFocus={true}
           returnKeyType="go"
+          underlineColorAndroid="transparent"
           placeholder="Search or enter URL"
           placeholderTextColor={theme.placeholder}
         />
@@ -337,7 +337,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     position: 'relative',
     zIndex: 5000,
-    elevation: 10,
   },
   pill: {
     flexDirection: 'row',
