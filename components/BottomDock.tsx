@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { ChevronLeft, ChevronRight, Home, Radar } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Home, Settings } from 'lucide-react-native';
 
 export const BottomDock = ({
   canGoBack,
@@ -10,8 +10,7 @@ export const BottomDock = ({
   onHome,
   onTabs,
   onLongPressTabs,
-  onOpenSniffer,
-  sniffedMediaCount = 0,
+  onOpenSettings,
   isPrivate,
   isDarkMode = false,
   tabCount = 1,
@@ -57,51 +56,16 @@ export const BottomDock = ({
           </View>
         </TouchableOpacity>
 
-        {/* Unique Futuristic Media Sniffer Radar Button */}
+        {/* Settings Button */}
         <TouchableOpacity
-          onPress={onOpenSniffer}
+          onPress={onOpenSettings}
           style={styles.iconButton}
           activeOpacity={0.7}
         >
-          <View
-            style={[
-              styles.snifferBtnWrapper,
-              sniffedMediaCount > 0 && [
-                styles.snifferBtnActive,
-                { backgroundColor: dark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)' },
-              ],
-            ]}
-          >
-            <Radar
-              size={21}
-              color={
-                sniffedMediaCount > 0
-                  ? (dark ? '#FFFFFF' : '#000000')
-                  : (dark ? '#CCCCCC' : '#444444')
-              }
-              strokeWidth={sniffedMediaCount > 0 ? 2.3 : 1.8}
-            />
-            {sniffedMediaCount > 0 && (
-              <View
-                style={[
-                  styles.snifferBadge,
-                  {
-                    backgroundColor: dark ? '#FFFFFF' : '#000000',
-                    borderColor: dark ? '#1A1A1A' : '#FFFFFF',
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.snifferBadgeText,
-                    { color: dark ? '#000000' : '#FFFFFF' },
-                  ]}
-                >
-                  {sniffedMediaCount > 9 ? '9+' : sniffedMediaCount}
-                </Text>
-              </View>
-            )}
-          </View>
+          <Settings
+            size={21}
+            color={dark ? '#CCCCCC' : '#444444'}
+          />
         </TouchableOpacity>
       </View>
     </View>
@@ -128,7 +92,7 @@ const styles = StyleSheet.create({
     elevation: 8,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.06)',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
   },
   dockPrivate: {
     backgroundColor: 'rgba(26, 26, 26, 0.95)',
@@ -157,32 +121,5 @@ const styles = StyleSheet.create({
   tabBadgeText: {
     fontSize: 11,
     fontWeight: '800',
-  },
-  snifferBtnWrapper: {
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  snifferBtnActive: {
-    transform: [{ scale: 1.05 }],
-  },
-  snifferBadge: {
-    position: 'absolute',
-    top: -6,
-    right: -8,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 3,
-  },
-  snifferBadgeText: {
-    fontSize: 9,
-    fontWeight: '900',
   },
 });

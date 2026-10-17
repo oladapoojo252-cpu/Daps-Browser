@@ -2,10 +2,14 @@
   "expo": {
     "name": "Daps Browser",
     "slug": "daps-browser",
-    "version": "1.1.0",
+    "version": "2.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.jpg",
     "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#000000",
+      "resizeMode": "contain"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -18,7 +22,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.daps.browser",
-      "versionCode": 2
+      "versionCode": 3
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,7 +36,8 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/21c7e911-b1d2-4975-9aa9-e67acf488627"
+      "url": "https://u.expo.dev/21c7e911-b1d2-4975-9aa9-e67acf488627",
+      "fallbackToCacheTimeout": 0
     },
     "plugins": [
       "expo-sharing",

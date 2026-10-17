@@ -623,6 +623,7 @@ function MainBrowserApp() {
             }
           }}
           isBookmarked={bookmarks.some(b => b.url === currentTab.url)}
+          bookmarks={bookmarks}
           onReload={() => {
             setIsLoading(true);
             browserRef.current?.reload();
@@ -804,11 +805,10 @@ function MainBrowserApp() {
               setIsTabSwitcherVisible(true);
             }}
             onLongPressTabs={handleLongPressTabs}
-            onOpenSniffer={() => {
+            onOpenSettings={() => {
               showDock();
-              setIsSnifferVisible(true);
+              setIsSettingsVisible(true);
             }}
-            sniffedMediaCount={currentTabMedia.length}
             isPrivate={isPrivate}
             isDarkMode={isDark}
             tabCount={tabs.length}
@@ -1063,7 +1063,7 @@ function MainBrowserApp() {
                         <View style={styles.homeTabPreview}>
                           <Compass size={24} color={theme.text} />
                           <Text style={[styles.homeTabTitle, { color: theme.text }]}>
-                            {tab.isIncognito ? 'Incognito Home' : 'Daps Home'}
+                            {tab.isIncognito ? 'Incognito Home' : 'Home'}
                           </Text>
                           <Text style={[styles.homeTabSub, { color: theme.subtext }]}>Start page</Text>
                         </View>

@@ -11,6 +11,7 @@ import Svg, {
   Path,
   Circle,
   Line,
+  Rect,
 } from 'react-native-svg';
 import { RotateCw, Home } from 'lucide-react-native';
 
@@ -92,42 +93,156 @@ export const AestheticErrorView: React.FC<AestheticErrorViewProps> = ({
     svgMuted: dark ? '#48484A' : '#C7C7CC',
   };
 
+  const renderErrorIllustration = () => {
+    if (isOffline) {
+      return (
+        <Svg width={96} height={84} viewBox="0 0 96 84" fill="none">
+          {/* Wi-Fi Arcs */}
+          <Path
+            d="M18 30 C 34 14, 62 14, 78 30"
+            stroke={theme.svgMuted}
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            fill="none"
+          />
+          <Path
+            d="M28 40 C 40 28, 56 28, 68 40"
+            stroke={theme.text}
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            fill="none"
+          />
+          <Path
+            d="M38 50 C 44 44, 52 44, 58 50"
+            stroke={theme.text}
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            fill="none"
+          />
+          {/* Wi-Fi Base Dot */}
+          <Circle cx={48} cy={62} r={4} fill={theme.text} />
+          {/* Clean Disconnect Slash */}
+          <Line x1={26} y1={20} x2={70} y2={68} stroke={theme.text} strokeWidth={2.5} strokeLinecap="round" />
+        </Svg>
+      );
+    }
+
+    if (isDnsError) {
+      return (
+        <Svg width={96} height={84} viewBox="0 0 96 84" fill="none">
+          {/* Globe Outer Circle */}
+          <Circle cx={44} cy={42} r={26} stroke={theme.text} strokeWidth={2.5} fill="none" />
+          {/* Equator & Meridian lines */}
+          <Line x1={18} y1={42} x2={70} y2={42} stroke={theme.svgMuted} strokeWidth={2} strokeLinecap="round" />
+          <Path
+            d="M44 16 C 33 25, 33 59, 44 68"
+            stroke={theme.svgMuted}
+            strokeWidth={2}
+            fill="none"
+          />
+          <Path
+            d="M44 16 C 55 25, 55 59, 44 68"
+            stroke={theme.svgMuted}
+            strokeWidth={2}
+            fill="none"
+          />
+          {/* Search Magnifier inspecting globe */}
+          <Circle cx={62} cy={52} r={10} stroke={theme.text} strokeWidth={2.5} fill={theme.bg} />
+          <Line x1={69} y1={59} x2={80} y2={70} stroke={theme.text} strokeWidth={2.5} strokeLinecap="round" />
+          {/* Small 'x' in lens */}
+          <Line x1={59} y1={49} x2={65} y2={55} stroke={theme.text} strokeWidth={1.8} strokeLinecap="round" />
+          <Line x1={65} y1={49} x2={59} y2={55} stroke={theme.text} strokeWidth={1.8} strokeLinecap="round" />
+        </Svg>
+      );
+    }
+
+    if (isTimeout) {
+      return (
+        <Svg width={96} height={84} viewBox="0 0 96 84" fill="none">
+          {/* Clock face */}
+          <Circle cx={48} cy={42} r={26} stroke={theme.text} strokeWidth={2.5} fill="none" />
+          {/* Outer dashed waiting orbit */}
+          <Circle
+            cx={48}
+            cy={42}
+            r={33}
+            stroke={theme.svgMuted}
+            strokeWidth={1.5}
+            strokeDasharray="4 4"
+            fill="none"
+          />
+          {/* Clock hands pointing at timeout */}
+          <Line x1={48} y1={42} x2={48} y2={26} stroke={theme.text} strokeWidth={2.5} strokeLinecap="round" />
+          <Line x1={48} y1={42} x2={60} y2={42} stroke={theme.text} strokeWidth={2.5} strokeLinecap="round" />
+          {/* Center hub */}
+          <Circle cx={48} cy={42} r={3} fill={theme.text} />
+          {/* Speed/wait dashes */}
+          <Line x1={12} y1={36} x2={18} y2={36} stroke={theme.svgMuted} strokeWidth={2} strokeLinecap="round" />
+          <Line x1={10} y1={42} x2={18} y2={42} stroke={theme.svgMuted} strokeWidth={2} strokeLinecap="round" />
+          <Line x1={14} y1={48} x2={18} y2={48} stroke={theme.svgMuted} strokeWidth={2} strokeLinecap="round" />
+        </Svg>
+      );
+    }
+
+    if (isSsl) {
+      return (
+        <Svg width={96} height={84} viewBox="0 0 96 84" fill="none">
+          {/* Security Shield Outline */}
+          <Path
+            d="M48 16 L 72 26 C 72 48, 48 66, 48 66 C 48 66, 24 48, 24 26 Z"
+            stroke={theme.text}
+            strokeWidth={2.5}
+            strokeLinejoin="round"
+            fill="none"
+          />
+          {/* Unlocked Shackle */}
+          <Path
+            d="M43 36 L 43 30 C 43 26, 46 23, 49 23 C 53 23, 56 26, 56 30 L 56 33"
+            stroke={theme.text}
+            strokeWidth={2}
+            strokeLinecap="round"
+            fill="none"
+          />
+          {/* Lock Body */}
+          <Rect
+            x={38}
+            y={36}
+            width={20}
+            height={14}
+            rx={3}
+            stroke={theme.text}
+            strokeWidth={2}
+            fill={theme.bg}
+          />
+          {/* Keyhole dot */}
+          <Circle cx={48} cy={43} r={1.8} fill={theme.text} />
+        </Svg>
+      );
+    }
+
+    // Generic Fallback (Server / Cloud with alert)
+    return (
+      <Svg width={96} height={84} viewBox="0 0 96 84" fill="none">
+        <Path
+          d="M28 54 C 20 54, 18 44, 24 38 C 22 28, 34 22, 42 26 C 48 18, 64 18, 68 28 C 76 28, 80 36, 76 44 C 82 48, 78 54, 72 54 Z"
+          stroke={theme.text}
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+        <Line x1={48} y1={32} x2={48} y2={42} stroke={theme.text} strokeWidth={2.5} strokeLinecap="round" />
+        <Circle cx={48} cy={47} r={1.6} fill={theme.text} />
+      </Svg>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.centerCard}>
-        {/* Crisp Vector SVG Illustration */}
+        {/* Dynamic Vector SVG Illustration for Specific Error */}
         <Animated.View style={[styles.svgWrapper, { transform: [{ translateY: floatAnim }] }]}>
-          <Svg width={96} height={84} viewBox="0 0 96 84" fill="none">
-            {/* Outer Signal Wave */}
-            <Path
-              d="M24 28 C 38 14, 58 14, 72 28"
-              stroke={theme.svgMuted}
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              fill="none"
-            />
-            {/* Mid Signal Wave */}
-            <Path
-              d="M32 36 C 42 26, 54 26, 64 36"
-              stroke={theme.text}
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              fill="none"
-            />
-            {/* Inner Signal Wave */}
-            <Path
-              d="M40 44 C 45 39, 51 39, 56 44"
-              stroke={theme.text}
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              fill="none"
-            />
-            {/* Transmitter Point */}
-            <Circle cx={48} cy={54} r={4} fill={theme.text} />
-            {/* Mast & Base */}
-            <Line x1={48} y1={58} x2={48} y2={70} stroke={theme.text} strokeWidth={2.5} strokeLinecap="round" />
-            <Line x1={36} y1={70} x2={60} y2={70} stroke={theme.text} strokeWidth={2.5} strokeLinecap="round" />
-          </Svg>
+          {renderErrorIllustration()}
         </Animated.View>
 
         {/* Clean Title */}
@@ -161,7 +276,7 @@ export const AestheticErrorView: React.FC<AestheticErrorViewProps> = ({
             >
               <Home size={15} color={theme.text} style={{ marginRight: 8 }} />
               <Text style={[styles.secondaryBtnText, { color: theme.text }]}>
-                Daps Home
+                Home
               </Text>
             </TouchableOpacity>
           )}

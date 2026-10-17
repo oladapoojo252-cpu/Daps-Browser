@@ -13,9 +13,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Search,
-  Key,
-  CreditCard,
-  MapPin,
   Shield,
   Trash2,
   Lock,
@@ -201,8 +198,8 @@ export const SettingsView = ({
             <ChevronRight size={18} color={theme.subtext} />
           </TouchableOpacity>
 
-          {/* Section: Basics */}
-          <Text style={[styles.sectionTitle, { color: theme.sectionHeader }]}>Basics</Text>
+          {/* Section: Search & Browsing */}
+          <Text style={[styles.sectionTitle, { color: theme.sectionHeader }]}>Search</Text>
 
           <TouchableOpacity
             style={[styles.settingRow, { borderBottomColor: theme.border }]}
@@ -215,54 +212,6 @@ export const SettingsView = ({
               <Text style={[styles.rowTitle, { color: theme.text }]}>Search engine</Text>
               <Text style={[styles.rowSubtitle, { color: theme.subtext }]}>
                 {currentEngine.name}
-              </Text>
-            </View>
-            <ChevronRight size={18} color={theme.subtext} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.settingRow, { borderBottomColor: theme.border }]}
-            onPress={() => Alert.alert('Passwords', 'Password saving and autofill is active.')}
-          >
-            <View style={styles.rowIcon}>
-              <Key size={20} color={theme.subtext} />
-            </View>
-            <View style={styles.rowMain}>
-              <Text style={[styles.rowTitle, { color: theme.text }]}>Passwords</Text>
-              <Text style={[styles.rowSubtitle, { color: theme.subtext }]}>
-                Saved credentials & passkeys
-              </Text>
-            </View>
-            <ChevronRight size={18} color={theme.subtext} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.settingRow, { borderBottomColor: theme.border }]}
-            onPress={() => Alert.alert('Payment Methods', 'Payment autofill settings.')}
-          >
-            <View style={styles.rowIcon}>
-              <CreditCard size={20} color={theme.subtext} />
-            </View>
-            <View style={styles.rowMain}>
-              <Text style={[styles.rowTitle, { color: theme.text }]}>Payment methods</Text>
-              <Text style={[styles.rowSubtitle, { color: theme.subtext }]}>
-                Cards and payment autofill
-              </Text>
-            </View>
-            <ChevronRight size={18} color={theme.subtext} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.settingRow, { borderBottomColor: theme.border }]}
-            onPress={() => Alert.alert('Addresses', 'Saved billing and delivery addresses.')}
-          >
-            <View style={styles.rowIcon}>
-              <MapPin size={20} color={theme.subtext} />
-            </View>
-            <View style={styles.rowMain}>
-              <Text style={[styles.rowTitle, { color: theme.text }]}>Addresses and more</Text>
-              <Text style={[styles.rowSubtitle, { color: theme.subtext }]}>
-                Saved delivery locations
               </Text>
             </View>
             <ChevronRight size={18} color={theme.subtext} />

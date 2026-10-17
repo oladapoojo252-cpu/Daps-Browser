@@ -11,7 +11,7 @@ import {
   Easing,
   Image,
 } from 'react-native';
-import { LayoutGrid, Zap, Globe, History, Download, ShieldCheck } from 'lucide-react-native';
+import { Globe, History, Download, ShieldCheck } from 'lucide-react-native';
 import { calculateShieldSavings } from '../utils/dapsShield';
 
 import {
@@ -199,7 +199,6 @@ export const DapsHome = ({
     border: dark ? '#333333' : '#EEEEEE',
     subtext: dark ? '#8E8E93' : '#777777',
     iconBg: dark ? '#222222' : '#F9F9F9',
-    badgeBg: dark ? '#333333' : '#000000',
   };
 
   return (
@@ -215,9 +214,6 @@ export const DapsHome = ({
           </Text>
           <Text style={[styles.greeting, { color: theme.text }]}>Daps Browser</Text>
         </View>
-        <TouchableOpacity style={[styles.menuBtn, { backgroundColor: theme.card }]} onPress={onOpenSettings}>
-          <LayoutGrid size={22} color={theme.text} />
-        </TouchableOpacity>
       </View>
 
       {/* Interactive Daps Shield Hero Card */}
@@ -248,13 +244,7 @@ export const DapsHome = ({
         />
 
         <View style={styles.heroInfo}>
-          <View style={[styles.badge, { backgroundColor: theme.badgeBg }]}>
-            <Zap size={10} color="#FFFFFF" fill="#FFFFFF" />
-            <Text style={styles.badgeText}>
-              {isPrivate ? 'PRIVATE ENGINE ACTIVE' : 'DAPS SHIELD ACTIVE'}
-            </Text>
-          </View>
-          <Text style={[styles.heroTitle, { color: theme.text }]}>Daps Engine</Text>
+          <Text style={[styles.heroTitle, { color: theme.text }]}>Daps Shield</Text>
           <Text style={[styles.heroDesc, { color: theme.subtext }]}>
             {totalBlockedCount > 0
               ? `${totalBlockedCount} ads & trackers blocked • ${savings.formattedData} data saved`
@@ -355,17 +345,6 @@ const styles = StyleSheet.create({
   dotOne: { width: 70, height: 70, right: 30, top: -20, opacity: 0.4 },
   dotTwo: { width: 45, height: 45, right: 100, bottom: -10, opacity: 0.3 },
   heroInfo: { flex: 1, paddingRight: 10 },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginBottom: 8,
-    alignSelf: 'flex-start',
-    gap: 4,
-  },
-  badgeText: { fontSize: 9, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
   heroTitle: { fontSize: 20, fontWeight: '800' },
   heroDesc: { fontSize: 12, marginTop: 4, lineHeight: 17 },
   radarContainer: {
